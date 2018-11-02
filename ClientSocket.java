@@ -21,7 +21,7 @@ public class ClientSocket
         {
             m_sClient = new Socket(sIP, nPort);
 			
-			System.out.println("Entrez un numéro");
+			System.out.println("Entrez un numero");
 			sLectureClavier = brLectureClavier.readLine();
             
             OutputStream osOut = m_sClient.getOutputStream();
