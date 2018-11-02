@@ -2,9 +2,9 @@ import java.io.*;
 import java.util.*;
 
 //Classe principale de l'application
-public class GPIO {
+public class LectureBouton {
  
-    public static final String GPIO_OUT = "out";        //Pour configurer la direction de la broche GPIO   
+    public static final String GPIO_IN = "in";        	//Pour configurer la direction de la broche GPIO   
     public static final String GPIO_ON = "1";           //Pour l'état haut de la broche GPIO
     public static final String GPIO_OFF = "0";          //Pour l'état bas de la broche GPIO
     public static final String NUMBER_GPIO = "3";   	//ID du GPIO de le Raspberry Pi
@@ -14,20 +14,20 @@ public class GPIO {
     //Point d'entrée du programme
     public static void main(String[] args)
     {
-        new GPIO(); 									//Appel du constructeur
+        new LectureBouton(); 							//Appel du constructeur
     }
  
     //Affiche un message lorsque le bouton est appuyé
-    public GPIO()
+    public LectureBouton()
     {
 		
 		try     
 		{
-			gpioUnexport(NUMBER_GPIO);          		//Désaffectation du GPIO #3 (au cas ou ce GPIO est déjà défini par un autre programme)
+			gpioUnexport(NUMBER_GPIO);          		//Déffectation du GPIO #3 (au cas ou ce GPIO est déjà défini par un autre programme)
 			gpioExport(NUMBER_GPIO);            		//Affectation du GPIO #3
 			gpioSetdir(NAME_GPIO, GPIO_IN);   			//Place GPIO #3 en entrée
 			
-			while (1)           						//Boucle infinie
+			while (true)           						//Boucle infinie
 			{
 
 			}
@@ -127,9 +127,9 @@ public class GPIO {
                                                                                     
             System.out.println(sCmd[0] + " " + sCmd[1] + " " + sCmd[2]);    	//Affiche la commande à exécuter dans la console Java
             Process p = Runtime.getRuntime().exec(sCmd);                    	//Exécute la commande par le système Linux (le programme Java doit 
-																				//Être démarré par le root pour les accès aux GPIO)
+																				//être démarré par le root pour les accès aux GPIO)
      
-            if(p.getErrorStream().available() > 0)        						//Vérification s'il y a une erreur d'exécution par l'interpréteur de commandes BASH
+            if(p.getErrorStream().available() > 0)        						//Vérification s'il y a une erreur d'exécution par l'interpreteur de commandes BASH
             {
                 //Affiche l'erreur survenue
                 bError = false;
@@ -156,7 +156,7 @@ public class GPIO {
     //  Change l'état du GPIO
     //
     //name_gpio : nom associé au répertoire créé par le kernel (gpio +  no i/o du port : Ex: GPIO 2 ==> pgio2)
-    // value : État à placer sur la ligne
+    // value : état à placer sur la ligne
     public Integer gpioSetBit(String name_gpio, String value)   
     {       
         try
