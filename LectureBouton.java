@@ -1,3 +1,16 @@
+/**
+ * @file   LectureBouton.java
+ * @author Pierre Bergeron (Modifié par Samuel Montminy)
+ * @date   9 nov 2018
+ * @brief  Code qui permet de contrôler l'état de pin "gpio" d'un raspberry pi en java. Le code permet d'affecter et de désafecter des gpio du kernel linux,
+ *         de changer la direction d'une pin (entrée/sortie), et de lire ou écrire sur un gpio.
+ *
+ * @version 1.0 : Première version
+ * Environnement de développement: GitKraken
+ * Compilateur: javac (Java version 1.8)
+ * Matériel: Raspberry Pi Zero W, Bouton normalement fermé, jumpers
+ */
+
 import java.io.*;
 import java.util.*;
 
@@ -20,7 +33,6 @@ public class LectureBouton {
     //Affiche un message lorsque le bouton est appuyé
     public LectureBouton()
     {
-		
 		try     
 		{
 			gpioUnexport(NUMBER_GPIO);          		//Déffectation du GPIO #3 (au cas ou ce GPIO est déjà défini par un autre programme)
@@ -29,7 +41,9 @@ public class LectureBouton {
 			
 			while (true)           						//Boucle infinie
 			{
-
+                Integer value = gpioReadBit(NAME_GPIO);
+                System.out.println(value);
+                Thread.sleep(100);
 			}
 		}
 		
@@ -38,6 +52,35 @@ public class LectureBouton {
 			exception.printStackTrace();    			//Affiche l'erreur qui est survenue
 		}
 	}
+
+    //Pour lire l'état du GPIO
+    public Integer gpioReadBit(String name_gpio)
+    {
+        String sLecture;
+
+        try
+        {
+            FileInputStream fis = new FileInputStream("/sys/class/gpio/" + name_gpio + "/value");           //Sélection de la destination du flux de
+                                                                                                            //données (sélection du fichier d'entrée)
+                                                                                                            
+            DataInputStream dis = new DataInputStream(fis);                                                 //Canal vers le fichier (entrée en "streaming")
+            sLecture = dis.readLine();                                                                      //Lecture du fichier                
+                                                                                                            
+            System.out.println("/sys/class/gpio/" + name_gpio + "/value = " + sLecture);                    //Affiche l'action réalisée dans la console Java
+            dis.close();                                                                                    //Fermeture du canal
+            fis.close();                                                                                    //Fermeture du flux de données
+        }
+		
+        catch(Exception e)
+        {
+            // Affiche l'erreur survenue en Java
+            sLecture = "-1";
+            System.out.println("Error on gpio readbits" + name_gpio + " :");
+            System.out.println(e.toString());
+        }
+		
+        return new Integer(sLecture);  																		//Retourne l'état "supposé" de la sortie
+    }
  
     //Pour désaffecter le GPIO par kernel
     public boolean gpioUnexport(String gpioid)   
