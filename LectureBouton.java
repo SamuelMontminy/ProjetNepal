@@ -3,7 +3,7 @@
  * @author Pierre Bergeron (Modifié par Samuel Montminy)
  * @date   9 nov 2018
  * @brief  Code qui permet de contrôler l'état de pin "gpio" d'un raspberry pi en java. Le code permet d'affecter et de désafecter des gpio du kernel linux,
- *         de changer la direction d'une pin (entrée/sortie), et de lire ou écrire sur un gpio.
+ *         de changer la direction d'une pin (entrée/sortie), et de lire ou écrire sur un gpio. Le code permet aussi de calculer la vitesse de rotation du gpio (Calcul du rpm sur une moyenne de 10 secondes)
  *
  * @version 1.0 : Première version
  * Environnement de développement: GitKraken
@@ -15,8 +15,8 @@ import java.io.*;
 import java.util.*;
 
 //Classe principale de l'application
-public class LectureBouton {
- 
+public class LectureBouton 
+{
     public static final String GPIO_IN = "in";        	//Pour configurer la direction de la broche GPIO   
     public static final String GPIO_ON = "1";           //Pour l'état haut de la broche GPIO
     public static final String GPIO_OFF = "0";          //Pour l'état bas de la broche GPIO
