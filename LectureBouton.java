@@ -33,6 +33,11 @@ public class LectureBouton {
     //Affiche un message lorsque le bouton est appuyé
     public LectureBouton()
     {
+        int vitesseRotation = 0;
+        int etatCapteur = 1;
+        int etatCapteur_c = 1;
+        int nbFronts = 0;
+
 		try     
 		{
 			gpioUnexport(NUMBER_GPIO);          		//Déffectation du GPIO #3 (au cas ou ce GPIO est déjà défini par un autre programme)
@@ -41,9 +46,23 @@ public class LectureBouton {
 			
 			while (true)           						//Boucle infinie
 			{
-                Integer value = gpioReadBit(NAME_GPIO);
-                System.out.println(value);
-                Thread.sleep(100);
+                for (int i = 0; i < 1000; i++)
+                {
+                    etatCapteur = gpioReadBit(NAME_GPIO);   //Lecture du gpio
+
+                    if (etatCapteur != etatCapteur_c)       //Il y a eu un changement de front
+                    {
+                        nbFronts++;
+                        etatCapteur_c = etatCapteur;
+                    }
+
+                    Thread.sleep(10);                   //Délai de 10ms répété 1000 fois, donc 10 secondes
+                }
+
+                vitesseRotation = (nbFronts * 6) / 2;       //Le fois 6 est parce que nbFronts correspond au nombre de fronts montants sur 10 secondes, et nous le voulons sur 1 minute. 
+                                                            //Le /2 est parce que la variable nbFronts détecte les fronts montants et déscendents, alors que nous voulons uniquement les fronts montant.
+                nbFronts = 0;
+                System.out.println(vitesseRotation);
 			}
 		}
 		
@@ -66,7 +85,7 @@ public class LectureBouton {
             DataInputStream dis = new DataInputStream(fis);                                                 //Canal vers le fichier (entrée en "streaming")
             sLecture = dis.readLine();                                                                      //Lecture du fichier                
                                                                                                             
-            System.out.println("/sys/class/gpio/" + name_gpio + "/value = " + sLecture);                    //Affiche l'action réalisée dans la console Java
+            //System.out.println("/sys/class/gpio/" + name_gpio + "/value = " + sLecture);                    //Affiche l'action réalisée dans la console Java
             dis.close();                                                                                    //Fermeture du canal
             fis.close();                                                                                    //Fermeture du flux de données
         }
