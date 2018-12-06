@@ -1,6 +1,6 @@
 /**
  * @file   Client.java
- * @author Samuel Montminy
+ * @author Samuel Montminy (Fonctions de IO faites par Pierre Bergeron)
  * @date   Novembre 2018
  * @brief  Code qui permet de lire la vitesse de rotation du gpio et puis de l'envoyer au serveur par socket tcp/ip
  *
@@ -9,7 +9,9 @@
  * Compilateur: javac (Java version 1.8)
  * Matériel: Raspberry Pi Zero W
  */
-
+ 
+import java.time.Duration;
+import java.time.Instant;
 import java.net.*;              						//Importation du package io pour les accès aux fichiers
 import java.io.*;
 
@@ -17,9 +19,15 @@ public class Client
 {
     Socket m_sClient;           						//Référence de l'objet Socket
 	
+	public Shutdown m_objShutdown;
+	public CalculeRPM m_objCalculeRPM;
+	
 	public static final String GPIO_IN = "in";        	//Pour configurer la direction de la broche GPIO   
 	public static final String NUMBER_GPIO = "3";   	//ID du GPIO de le Raspberry Pi avec le capteur Reed switch
 	public static final String NAME_GPIO = "gpio3";     //Nom du GPIO pour le Raspberry Pi
+	
+	String m_IP;
+	int m_Port;
     
     public Client()
     {
@@ -29,7 +37,6 @@ public class Client
     public Client(String sIP, int nPort)
     {   
 		String Message = "Erreur client";
-		int vitesseRotation = 0;
 		
 		try
 		{
@@ -37,11 +44,15 @@ public class Client
 			gpioExport(NUMBER_GPIO);            		//Affectation du GPIO #3
 			gpioSetdir(NAME_GPIO, GPIO_IN);   			//Place GPIO #3 en entrée
 			
+			m_objShutdown = new Shutdown(this);
+			m_objCalculeRPM = new CalculeRPM(this);
+			
+			m_IP = sIP;
+			m_Port = nPort;
+			
 			while (true)
 			{
-				vitesseRotation = LectureReed();
-				Message = Integer.toString(vitesseRotation);
-				EnvoyerAuServeur(sIP, nPort, Message);
+				
 			}
 		}
 		
@@ -51,40 +62,7 @@ public class Client
 		}
     }
 	
-	public int LectureReed()
-	{
-		int vitesseRotation = 0;
-		int nbFronts = 0;
-		int etatCapteur = 1;
-		int etatCapteur_c = 1;
-			
-		try
-		{	
-		   for (int i = 0; i < 1000; i++)
-			{
-				etatCapteur = gpioReadBit(NAME_GPIO);   //Lecture du gpio
-
-				if (etatCapteur != etatCapteur_c)       //Il y a eu un changement de front
-				{
-					nbFronts++;
-					etatCapteur_c = etatCapteur;
-				}
-
-				Thread.sleep(10);                   	//Délai de 10ms répété 1000 fois, donc 10 secondes
-			}
-
-			vitesseRotation = (nbFronts * 6) / 2;       //Le fois 6 est parce que nbFronts correspond au nombre de fronts montants sur 10 secondes, et nous le voulons sur 1 minute. 
-														//Le /2 est parce que la variable nbFronts détecte les fronts montants et descendents, alors que nous voulons uniquement les fronts montant.
-		}
-		
-		catch (Exception e)
-		{
-			System.out.println(e.toString());
-		}
-		
-		return vitesseRotation;
-	}
-	
+	//Envoie le RPM au serveur (Pi 3b)
 	public void EnvoyerAuServeur(String sIP, int nPort, String Message)
 	{
         boolean Modification = false;
@@ -153,6 +131,11 @@ public class Client
         }
     }
 	
+	public void ResetCountdown()													//Remet le compteur d'inactivité à sa valeur par défaut (300 secondes)
+	{
+		m_objShutdown.ResetCountdown();
+	}
+	
 	//Pour lire l'état du GPIO
     public Integer gpioReadBit(String name_gpio)
     {
@@ -205,12 +188,12 @@ public class Client
                 brCommand.close();
 			}
 			
-			Thread.sleep(20);   						//Délai pour laisser le temps au kernel d'agir
+			Thread.sleep(20);   												//Délai pour laisser le temps au kernel d'agir
         }
 		
-        catch(Exception e)      						//Traitement de l'erreur par la VM Java (différent de l'erreur par l'interpreteur BASH)
+        catch(Exception e)      												//Traitement de l'erreur par la VM Java (différent de l'erreur par l'interpreteur BASH)
         {
-														//Affiche l'erreur survenue en Java
+			//Affiche l'erreur survenue en Java
             bError = false;
             System.out.println("Error on export GPIO :" + gpioid);
             System.out.println(e.toString());
@@ -297,4 +280,148 @@ public class Client
 		
 		return bError;
     }  
+}
+
+//Thread qui permet de calculer la vitesse de rotation en utilisant le temps entre chaque front montant
+class CalculeRPM implements Runnable
+{
+	long MilliSecondes;
+	long RPM;
+	
+	Duration duree;
+	Instant start;
+	Instant end ;
+	
+	Thread m_Thread;
+    private Client m_Parent;				//Référence vers la classe principale (Client)
+		
+	public CalculeRPM(Client Parent)		//Constructeur
+	{
+		try
+		{
+			m_Parent = Parent;
+			
+			m_Thread = new Thread(this);	//Crée le thread
+			m_Thread.start();				//Démarre le thread
+		}
+		
+		catch(Exception e)
+		{
+			System.out.println(e.toString());
+		}
+	}
+	
+	public void run()						//Thread qui roule en parallèle de la classe principale
+	{
+		while (true)
+		{
+			try
+			{
+				while (m_Parent.gpioReadBit(m_Parent.NAME_GPIO) == 1)
+				{
+					
+				}	//Détecte un front montant
+				
+				start = Instant.now();
+				
+				while (m_Parent.gpioReadBit(m_Parent.NAME_GPIO) == 0)
+				{
+					
+				}	//Front descendant
+				
+				while (m_Parent.gpioReadBit(m_Parent.NAME_GPIO) == 1)
+				{
+					
+				}	//Front montant
+				
+				end = Instant.now();
+				
+				duree = Duration.between(start, end);
+				MilliSecondes = duree.toMillis();
+				RPM = 60000 / MilliSecondes;													//Convertit le temps en millisecondes en RPM
+				System.out.println("Tour en: " + String.valueOf(MilliSecondes) + "ms, RPM: " + String.valueOf(RPM));
+				
+				m_Parent.EnvoyerAuServeur(m_Parent.m_IP, m_Parent.m_Port, String.valueOf(RPM));	//Envoie l'information (RPM) à la fonction qui va l'envoyer au serveur
+				m_Parent.ResetCountdown();														//Réinitialise le compteur d'inactivité
+			}
+			
+			catch(Exception e)
+			{
+				System.out.println(e.toString());
+			}
+		}
+	}
+}
+
+//Thread qui permet d'éteindre le Pi Zero après deux minutes d'inactivité (pas de front montants détectés) pour conserver la batterie
+class Shutdown implements Runnable
+{
+	boolean EnVie;
+	Thread m_Thread;
+    private Client m_Parent;				//Référence vers la classe principale (Client)
+	
+	int m_Countdown;
+	
+	public Shutdown(Client Parent)			//Constructeur
+	{
+		try
+		{
+			m_Parent = Parent;
+			
+			m_Thread = new Thread(this);	//Crée le thread
+			m_Thread.start();				//Démarre le thread
+			
+			m_Countdown = 120;				//Après trois minutes d'inactivité, le pi s'éteint
+			EnVie = true;
+		}
+		
+		catch(Exception e)
+		{
+			System.out.println(e.toString());
+		}
+	}
+	
+	public void ResetCountdown()			//Permet de rénitialiser la valeur du compteur d'inactivité
+	{
+		m_Countdown = 120;
+	}
+	
+	public void run()						//Thread qui roule en parallèle de la classe principale
+	{
+		while (true)
+		{
+			try
+			{
+				if (m_Countdown <= 0 && EnVie == true)										//Si aucun front montant n'à été détecté dans les deux dernières minutes
+				{
+					EnVie = false;
+					String sCommande = "sudo shutdown now";  								//Commande bash à être exécutée
+					String[] sCmd = {"/bin/bash", "-c", sCommande};                       	//Spécifie que l'interpreteur de commandes est BASH. Le "-c" indique que la commande à exécuter suit
+																							
+					System.out.println(sCmd[0] + " " + sCmd[1] + " " + sCmd[2]);            //Affiche la commande à exécuter dans la console Java
+					Process p = Runtime.getRuntime().exec(sCmd);                            //Exécute la commande par le système Linux (le programme Java
+																							//doit être démarré par le root pour les accès aux GPIO)
+		 
+					if(p.getErrorStream().available() > 0)                                  //Vérification s'il y a une erreur d'exécution par l'interpreteur de commandes BASH
+					{
+						BufferedReader brCommand = new BufferedReader(new InputStreamReader(p.getErrorStream()));
+						System.out.println(brCommand.readLine());
+						brCommand.close();
+					}
+				}
+				
+				else																		//Décrémente la valeur du compteur d'inactivité
+				{
+					m_Countdown--;
+					Thread.sleep(1000);
+					System.out.println("Countdown: " + String.valueOf(m_Countdown));
+				}
+			}
+			
+			catch(Exception e)
+			{
+				System.out.println(e.toString());
+			}
+		}
+	}
 }
