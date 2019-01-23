@@ -156,6 +156,7 @@ class LectureCapteur implements Runnable
 		{
 			try
 			{
+				//CODE TROUVÉ SUR INTERNET <---
 				// Create I2C bus
 				I2CBus bus = I2CFactory.getInstance(I2CBus.BUS_1);
 				// Get I2C device, BME280 I2C address is 0x77(108)
@@ -314,9 +315,9 @@ class LectureCapteur implements Runnable
 				System.out.printf("Pressure : %.2f hPa %n", pressure);
 				System.out.printf("Relative Humidity : %.2f %% RH %n", humidity);
 				*/
+				//FIN DU CODE TROUVÉ SUR INTERNET <---
 		
-				//Envoyer toutes les données au lieu de juste 1
-				m_Parent.EnvoyerAuServeur(m_Parent.m_IP, m_Parent.m_Port, String.valueOf(cTemp));	//Envoie l'information (RPM) à la fonction qui va l'envoyer au serveur
+				m_Parent.EnvoyerAuServeur(m_Parent.m_IP, m_Parent.m_Port, String.valueOf("T:" + cTemp + "/P:" + pressure + "/H:" + humidity));	//Envoie l'information (RPM) à la fonction qui va l'envoyer au serveur
 				Thread.sleep(2500);
 			}
 			

@@ -342,7 +342,7 @@ class CalculeRPM implements Runnable
 				RPM = 60000 / MilliSecondes;													//Convertit le temps en millisecondes en RPM
 				System.out.println("Tour en: " + String.valueOf(MilliSecondes) + "ms, RPM: " + String.valueOf(RPM));
 				
-				m_Parent.EnvoyerAuServeur(m_Parent.m_IP, m_Parent.m_Port, String.valueOf(RPM));	//Envoie l'information (RPM) à la fonction qui va l'envoyer au serveur
+				m_Parent.EnvoyerAuServeur(m_Parent.m_IP, m_Parent.m_Port, String.valueOf("RPM:" + RPM));	//Envoie l'information (RPM) à la fonction qui va l'envoyer au serveur
 				m_Parent.ResetCountdown();														//Réinitialise le compteur d'inactivité
 			}
 			
