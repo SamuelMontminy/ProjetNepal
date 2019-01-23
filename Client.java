@@ -64,12 +64,7 @@ public class Client
 	
 	//Envoie le RPM au serveur (Pi 3b)
 	public void EnvoyerAuServeur(String sIP, int nPort, String Message)
-	{
-        boolean Modification = false;
-        BufferedReader brLectureClavier;                                            //Objet pour la lecture du clavier
- 
-        brLectureClavier = new BufferedReader(new InputStreamReader(System.in));    //Sélection de la source de données pour la lecture du clavier
-        
+	{   
         try
         {
             m_sClient = new Socket(sIP, nPort);                                     //Objet Socket pour établir la connexion au miniserveur
@@ -81,6 +76,8 @@ public class Client
             //Fermeture des objets de flux de données
             oosOut.close();
             osOut.close();
+			
+			//System.out.println(Message);
         }
         
         catch(UnknownHostException e)
