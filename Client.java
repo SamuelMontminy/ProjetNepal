@@ -67,6 +67,10 @@ public class Client
 	{   
         try
         {
+			System.out.println(Message + " -> à été reçu par la fonction");
+						
+			///*		Mettre en commentaire le bloc pour ne pas envoyer au serveur
+			System.out.println(Message + " -> sera envoyé au serveur");
             m_sClient = new Socket(sIP, nPort);                                     //Objet Socket pour établir la connexion au miniserveur
             
             OutputStream osOut = m_sClient.getOutputStream();                       //Requête vers le serveur... (flux de données)
@@ -76,8 +80,8 @@ public class Client
             //Fermeture des objets de flux de données
             oosOut.close();
             osOut.close();
-			
-			//System.out.println(Message);
+			System.out.println(Message + " -> à été envoyé au serveur");
+			//*/
         }
         
         catch(UnknownHostException e)
