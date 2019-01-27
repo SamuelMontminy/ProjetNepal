@@ -1,10 +1,14 @@
 /**
- * @file   Client.java
+ * @file   ClientEcremeuse.java
  * @author Samuel Montminy (Fonctions de IO faites par Pierre Bergeron)
- * @date   Novembre 2018
- * @brief  Code qui permet de lire la vitesse de rotation du gpio et puis de l'envoyer au serveur par socket tcp/ip
+ * @date   Janvier 2019
+ * @brief  Code qui permet de déterminer la vitesse de rotation de l'écrémeuse en détectant les fronts montants sur un gpio.
+ *         Le temps entre chaque front montant est ensuite converti en RPM puis est envoyé au serveur par socket tcp/ip.
+ *		   Ce code incorpore aussi un thread qui permet de lire une sonde DS18B20 par protocole OneWire pour avoir la température du lait dans l'écrémeuse.
+ *		   De plus, il y a un thread qui permet d'éteindre le Pi pour économiser de l'énergie lorsque aucun front montant n'est détecté pendant un certain nombre de temps.
  *
  * @version 1.0 : Première version
+ * @version 1.1 : Distinction entre les codes clients. Ce code sera seulement utilisé par l'écrémeuse (RPM & DS18B20)
  * Environnement de développement: GitKraken
  * Compilateur: javac (Java version 1.8)
  * Matériel: Raspberry Pi Zero W
@@ -15,12 +19,17 @@ import java.time.Instant;
 import java.net.*;              						//Importation du package io pour les accès aux fichiers
 import java.io.*;
 
-public class Client
+import com.pi4j.component.temperature.TemperatureSensor;
+import com.pi4j.io.w1.W1Master;
+import com.pi4j.temperature.TemperatureScale;
+
+public class ClientEcremeuse
 {
     Socket m_sClient;           						//Référence de l'objet Socket
 	
 	public Shutdown m_objShutdown;
 	public CalculeRPM m_objCalculeRPM;
+	public LectureCapteur m_objLectureCapteur;
 	
 	public static final String GPIO_IN = "in";        	//Pour configurer la direction de la broche GPIO   
 	public static final String NUMBER_GPIO = "3";   	//ID du GPIO de le Raspberry Pi avec le capteur Reed switch
@@ -29,12 +38,12 @@ public class Client
 	String m_IP;
 	int m_Port;
     
-    public Client()
+    public ClientEcremeuse()
     {
     }
   
     //Constructeur de la classe, reçoit l'adresse ip et le port de la fonction main
-    public Client(String sIP, int nPort)
+    public ClientEcremeuse(String sIP, int nPort)
     {   
 		String Message = "Erreur client";
 		
@@ -46,6 +55,7 @@ public class Client
 			
 			m_objShutdown = new Shutdown(this);
 			m_objCalculeRPM = new CalculeRPM(this);
+			m_objLectureCapteur = new LectureCapteur(this);
 			
 			m_IP = sIP;
 			m_Port = nPort;
@@ -63,6 +73,7 @@ public class Client
     }
 	
 	//Envoie le RPM au serveur (Pi 3b)
+	//Fonction faite par Pierre Bergeron (Modifiée par Samuel Montminy)
 	public void EnvoyerAuServeur(String sIP, int nPort, String Message)
 	{   
         try
@@ -117,7 +128,7 @@ public class Client
             {
                 Integer iArgs = new Integer(args[1]);                               //Conversion du 2e paramètre en entier
                 
-                Client obj = new Client(args[0], iArgs.intValue());     			//Connexion au serveur s'il existe...
+                ClientEcremeuse obj = new ClientEcremeuse(args[0], iArgs.intValue());     			//Connexion au serveur s'il existe...
             }
             
             catch(NumberFormatException e)
@@ -132,12 +143,13 @@ public class Client
         }
     }
 	
-	public void ResetCountdown()													//Remet le compteur d'inactivité à sa valeur par défaut (300 secondes)
+	public void ResetCountdown()													//Remet le compteur d'inactivité à sa valeur par défaut (120 secondes)
 	{
 		m_objShutdown.ResetCountdown();
 	}
 	
 	//Pour lire l'état du GPIO
+	//Fonction faite par Pierre Bergeron (Modifiée par Samuel Montminy)
     public Integer gpioReadBit(String name_gpio)
     {
         String sLecture;
@@ -150,7 +162,7 @@ public class Client
             DataInputStream dis = new DataInputStream(fis);                                                 //Canal vers le fichier (entrée en "streaming")
             sLecture = dis.readLine();                                                                      //Lecture du fichier                
                                                                                                             
-            //System.out.println("/sys/class/gpio/" + name_gpio + "/value = " + sLecture);                    //Affiche l'action réalisée dans la console Java
+            //System.out.println("/sys/class/gpio/" + name_gpio + "/value = " + sLecture);                  //Affiche l'action réalisée dans la console Java
             dis.close();                                                                                    //Fermeture du canal
             fis.close();                                                                                    //Fermeture du flux de données
         }
@@ -163,10 +175,11 @@ public class Client
             System.out.println(e.toString());
         }
 		
-        return new Integer(sLecture);  																		//Retourne l'état "supposé" de la sortie
+        return new Integer(sLecture);  												//Retourne l'état "supposé" de la sortie
     }
 	
 	//Pour désaffecter le GPIO par kernel
+	//Fonction faite par Pierre Bergeron (Modifiée par Samuel Montminy)
     public boolean gpioUnexport(String gpioid)   
     {  
         boolean bError = true;  													//Pour gestion des erreurs
@@ -174,7 +187,7 @@ public class Client
         try
         {
             String sCommande = "echo \"" + gpioid + "\">/sys/class/gpio/unexport";  //Commande bash à être exécutée
-            String[] sCmd = {"/bin/bash", "-c", sCommande};                       	//Spécifie que l'interpreteur de commandes est BASH. Le "-c" indique que la commande à exécuter suit
+            String[] sCmd = {"/bin/bash", "-c", sCommande};                       	//Spécifie que l'interpreteur de commandes est BASH. Le "-c" indique que la commande � ex�cuter suit
                                                                                     
             System.out.println(sCmd[0] + " " + sCmd[1] + " " + sCmd[2]);            //Affiche la commande à exécuter dans la console Java
             Process p = Runtime.getRuntime().exec(sCmd);                            //Exécute la commande par le système Linux (le programme Java
@@ -204,6 +217,7 @@ public class Client
     }
 	
 	//Pour affecter le GPIO par kernel
+	//Fonction faite par Pierre Bergeron (Modifiée par Samuel Montminy)
     public boolean gpioExport(String gpioid)   
     {  
         boolean bError = true;  												//Pour gestion des erreurs
@@ -240,10 +254,10 @@ public class Client
         return bError;
     }  
 	
-	// Configure la direction du GPIO
-    //
-    // name_gpio : nom associé au répertoire créé par le kernel (gpio +  no i/o du port : Ex: GPIO 2 ==> pgio2)
-    // sMode : Configuration de la direction du GPIO("out" ou "in")
+	//Configure la direction du GPIO
+    //name_gpio : nom associé au répertoire créé par le kernel (gpio +  no i/o du port : Ex: GPIO 2 ==> pgio2)
+    //sMode : Configuration de la direction du GPIO("out" ou "in")
+	//Fonction faite par Pierre Bergeron (Modifiée par Samuel Montminy)
     public boolean gpioSetdir(String name_gpio, String sMode)   
     {  
         boolean bError = true;  												//Pour gestion des erreurs
@@ -294,16 +308,16 @@ class CalculeRPM implements Runnable
 	Instant end ;
 	
 	Thread m_Thread;
-    private Client m_Parent;				//Référence vers la classe principale (Client)
+    private ClientEcremeuse m_Parent;				//Référence vers la classe principale (ClientEcremeuse)
 		
-	public CalculeRPM(Client Parent)		//Constructeur
+	public CalculeRPM(ClientEcremeuse Parent)		//Constructeur
 	{
 		try
 		{
 			m_Parent = Parent;
 			
-			m_Thread = new Thread(this);	//Crée le thread
-			m_Thread.start();				//Démarre le thread
+			m_Thread = new Thread(this);			//Crée le thread
+			m_Thread.start();						//Démarre le thread
 		}
 		
 		catch(Exception e)
@@ -312,7 +326,7 @@ class CalculeRPM implements Runnable
 		}
 	}
 	
-	public void run()						//Thread qui roule en parallèle de la classe principale
+	public void run()								//Thread qui roule en parallèle de la classe principale
 	{
 		while (true)
 		{
@@ -339,11 +353,11 @@ class CalculeRPM implements Runnable
 				
 				duree = Duration.between(start, end);
 				MilliSecondes = duree.toMillis();
-				RPM = 60000 / MilliSecondes;													//Convertit le temps en millisecondes en RPM
+				RPM = 60000 / MilliSecondes;																		//Convertit le temps en millisecondes en RPM
 				System.out.println("Tour en: " + String.valueOf(MilliSecondes) + "ms, RPM: " + String.valueOf(RPM));
 				
-				m_Parent.EnvoyerAuServeur(m_Parent.m_IP, m_Parent.m_Port, String.valueOf("RPM:" + RPM));	//Envoie l'information (RPM) à la fonction qui va l'envoyer au serveur
-				m_Parent.ResetCountdown();														//Réinitialise le compteur d'inactivité
+				m_Parent.EnvoyerAuServeur(m_Parent.m_IP, m_Parent.m_Port, String.valueOf("Écrémeuse/RPM:" + RPM));	//Envoie l'information (RPM) à la fonction qui va l'envoyer au serveur
+				m_Parent.ResetCountdown();																			//Réinitialise le compteur d'inactivité
 			}
 			
 			catch(Exception e)
@@ -359,20 +373,20 @@ class Shutdown implements Runnable
 {
 	boolean EnVie;
 	Thread m_Thread;
-    private Client m_Parent;				//Référence vers la classe principale (Client)
+    private ClientEcremeuse m_Parent;				//Référence vers la classe principale (ClientEcremeuse)
 	
 	int m_Countdown;
 	
-	public Shutdown(Client Parent)			//Constructeur
+	public Shutdown(ClientEcremeuse Parent)			//Constructeur
 	{
 		try
 		{
 			m_Parent = Parent;
 			
-			m_Thread = new Thread(this);	//Crée le thread
-			m_Thread.start();				//Démarre le thread
+			m_Thread = new Thread(this);			//Crée le thread
+			m_Thread.start();						//Démarre le thread
 			
-			m_Countdown = 120;				//Après trois minutes d'inactivité, le pi s'éteint
+			m_Countdown = 120;						//Après deux minutes d'inactivité, le pi s'éteint
 			EnVie = true;
 		}
 		
@@ -382,12 +396,12 @@ class Shutdown implements Runnable
 		}
 	}
 	
-	public void ResetCountdown()			//Permet de rénitialiser la valeur du compteur d'inactivité
+	public void ResetCountdown()					//Permet de rénitialiser la valeur du compteur d'inactivité
 	{
 		m_Countdown = 120;
 	}
 	
-	public void run()						//Thread qui roule en parallèle de la classe principale
+	public void run()								//Thread qui roule en parallèle de la classe principale
 	{
 		while (true)
 		{
@@ -417,6 +431,66 @@ class Shutdown implements Runnable
 					Thread.sleep(1000);
 					System.out.println("Countdown: " + String.valueOf(m_Countdown));
 				}
+			}
+			
+			catch(Exception e)
+			{
+				System.out.println(e.toString());
+			}
+		}
+	}
+}
+
+//Thread qui permet de lire le capteur OneWire DS18B20
+class LectureCapteur implements Runnable
+{
+    private ClientEcremeuse m_Parent;				//Référence vers la classe principale (ClientEcremeuse)
+	
+	W1Master w1Master = new W1Master();
+		
+	double Temperature = 0;
+	
+	public LectureCapteur(ClientEcremeuse Parent)	//Constructeur
+	{
+		try
+		{
+			m_Parent = Parent;
+			
+			m_Thread = new Thread(this);			//Crée le thread
+			m_Thread.start();						//Démarre le thread
+		}
+		
+		catch(Exception e)
+		{
+			System.out.println(e.toString());
+		}
+	}
+	
+	public void run()								//Thread qui roule en parallèle de la classe principale
+	{	
+		while (true)
+		{
+			try
+			{
+				//CODE TROUVÉ SUR INTERNET <--- Projet github: https://github.com/oksbwn/IOT_Raspberry_Pi/tree/master/src/in/weargenius
+				for (TemperatureSensor device : w1Master.getDevices(TemperatureSensor.class)) 
+				{
+					Temperature = device.getTemperature();
+				}
+				
+				if (temp != 0)
+				{
+					System.out.println("Temperature:" + Temperature + " °C");
+				}
+				
+				else
+				{
+					System.out.println("Erreur lecture capteur");
+				}
+				//FIN DU CODE TROUVÉ SUR INTERNET <---
+				
+				m_Parent.EnvoyerAuServeur(m_Parent.m_IP, m_Parent.m_Port, String.valueOf("Écrémeuse/T:" + Temperature));	//Envoie l'information (Température) à la fonction qui va l'envoyer au serveur
+				Thread.sleep(2500);
 			}
 			
 			catch(Exception e)

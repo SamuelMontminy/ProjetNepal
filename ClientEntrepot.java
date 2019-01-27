@@ -1,11 +1,11 @@
 /**
  * @file   ClientEntrepot.java
  * @author Samuel Montminy
- * @date   Novembre 2018
- * @brief  Code qui permet de lire le capteur BME280 et puis de l'envoyer au serveur par socket tcp/ip
+ * @date   Janvier 2019
+ * @brief  Code qui permet de lire le capteur BME280 par I2C et puis et envoyer les données au serveur par socket tcp/ip
  *
  * @version 1.0 : Première version
- * @version 1.1 : Code pour le Pi dans l'entrepot
+ * @version 1.1 : Distinction entre les codes clients. Ce code sera seulement utilisé par l'entrepot (BME280)
  * Environnement de développement: GitKraken
  * Compilateur: javac (Java version 1.8)
  * Matériel: Raspberry Pi Zero W
@@ -13,11 +13,11 @@
  
 import java.net.*;              						//Importation du package io pour les accès aux fichiers
 import java.io.*;
+import java.io.IOException;
 
 import com.pi4j.io.i2c.I2CBus;
 import com.pi4j.io.i2c.I2CDevice;
 import com.pi4j.io.i2c.I2CFactory;
-import java.io.IOException;
 
 public class ClientEntrepot
 {
@@ -57,6 +57,7 @@ public class ClientEntrepot
     }
 	
 	//Envoie le RPM au serveur (Pi 3b)
+	//Fonction faite par Pierre Bergeron (Modifiée par Samuel Montminy)
 	public void EnvoyerAuServeur(String sIP, int nPort, String Message)
 	{   
         try
@@ -111,7 +112,7 @@ public class ClientEntrepot
             {
                 Integer iArgs = new Integer(args[1]);                               //Conversion du 2e paramètre en entier
                 
-                ClientEntrepot obj = new ClientEntrepot(args[0], iArgs.intValue());     			//Connexion au serveur s'il existe...
+                ClientEntrepot obj = new ClientEntrepot(args[0], iArgs.intValue()); //Connexion au serveur s'il existe...
             }
             
             catch(NumberFormatException e)
@@ -132,7 +133,7 @@ class LectureCapteur implements Runnable
 {
 	String Message = "Erreur Lecture Capteur";
 	Thread m_Thread;
-    private ClientEntrepot m_Parent;				//Référence vers la classe principale (ClientEntrepot)
+    private ClientEntrepot m_Parent;					//Référence vers la classe principale (ClientEntrepot)
 		
 	public LectureCapteur(ClientEntrepot Parent)		//Constructeur
 	{
@@ -140,8 +141,8 @@ class LectureCapteur implements Runnable
 		{
 			m_Parent = Parent;
 			
-			m_Thread = new Thread(this);	//Crée le thread
-			m_Thread.start();				//Démarre le thread
+			m_Thread = new Thread(this);				//Crée le thread
+			m_Thread.start();							//Démarre le thread
 		}
 		
 		catch(Exception e)
@@ -150,24 +151,24 @@ class LectureCapteur implements Runnable
 		}
 	}
 	
-	public void run()						//Thread qui roule en parallèle de la classe principale
+	public void run()									//Thread qui roule en parallèle de la classe principale
 	{
 		while (true)
 		{
 			try
 			{
-				//CODE TROUVÉ SUR INTERNET <---
-				// Create I2C bus
+				//CODE TROUVÉ SUR INTERNET <--- Projet github: https://github.com/ControlEverythingCommunity/BME280/blob/master/Java/BME280.java
+				//Create I2C bus
 				I2CBus bus = I2CFactory.getInstance(I2CBus.BUS_1);
-				// Get I2C device, BME280 I2C address is 0x77(108)
+				//Get I2C device, BME280 I2C address is 0x77(108)
 				I2CDevice device = bus.getDevice(0x77);
 				
-				// Read 24 bytes of data from address 0x88(136)
+				//Read 24 bytes of data from address 0x88(136)
 				byte[] b1 = new byte[24];
 				device.read(0x88, b1, 0, 24);
 				
-				// Convert the data
-				// temp coefficients
+				//Convert the data
+				//temp coefficients
 				int dig_T1 = (b1[0] & 0xFF) + ((b1[1] & 0xFF) * 256);
 				int dig_T2 = (b1[2] & 0xFF) + ((b1[3] & 0xFF) * 256);
 				if(dig_T2 > 32767)
@@ -180,7 +181,7 @@ class LectureCapteur implements Runnable
 					dig_T3 -= 65536;
 				}
 				
-				// pressure coefficients
+				//pressure coefficients
 				int dig_P1 = (b1[6] & 0xFF) + ((b1[7] & 0xFF) * 256);
 				int dig_P2 = (b1[8] & 0xFF) + ((b1[9] & 0xFF) * 256);
 				if(dig_P2 > 32767)
@@ -223,14 +224,14 @@ class LectureCapteur implements Runnable
 					dig_P9 -= 65536;
 				}
 				
-				// Read 1 byte of data from address 0xA1(161)
+				//Read 1 byte of data from address 0xA1(161)
 				int dig_H1 = ((byte)device.read(0xA1) & 0xFF);
 				
-				// Read 7 bytes of data from address 0xE1(225)
+				//Read 7 bytes of data from address 0xE1(225)
 				device.read(0xE1, b1, 0, 7);
 				
-				// Convert the data
-				// humidity coefficients
+				//Convert the data
+				//humidity coefficients
 				int dig_H2 = (b1[0] & 0xFF) + (b1[1] * 256);
 				if(dig_H2 > 32767)
 				{
@@ -253,28 +254,28 @@ class LectureCapteur implements Runnable
 					dig_H6 -= 256;
 				}
 				
-				// Select control humidity register
-				// Humidity over sampling rate = 1
+				//Select control humidity register
+				//Humidity over sampling rate = 1
 				device.write(0xF2 , (byte)0x01);
-				// Select control measurement register
-				// Normal mode, temp and pressure over sampling rate = 1
+				//Select control measurement register
+				//Normal mode, temp and pressure over sampling rate = 1
 				device.write(0xF4 , (byte)0x27);
-				// Select config register
-				// Stand_by time = 1000 ms
+				//Select config register
+				//Stand_by time = 1000 ms
 				device.write(0xF5 , (byte)0xA0);
 				
-				// Read 8 bytes of data from address 0xF7(247)
-				// pressure msb1, pressure msb, pressure lsb, temp msb1, temp msb, temp lsb, humidity lsb, humidity msb
+				//Read 8 bytes of data from address 0xF7(247)
+				//pressure msb1, pressure msb, pressure lsb, temp msb1, temp msb, temp lsb, humidity lsb, humidity msb
 				byte[] data = new byte[8];
 				device.read(0xF7, data, 0, 8);
 				
-				// Convert pressure and temperature data to 19-bits
+				//Convert pressure and temperature data to 19-bits
 				long adc_p = (((long)(data[0] & 0xFF) * 65536) + ((long)(data[1] & 0xFF) * 256) + (long)(data[2] & 0xF0)) / 16;
 				long adc_t = (((long)(data[3] & 0xFF) * 65536) + ((long)(data[4] & 0xFF) * 256) + (long)(data[5] & 0xF0)) / 16;
 				// Convert the humidity data
 				long adc_h = ((long)(data[6] & 0xFF) * 256 + (long)(data[7] & 0xFF));
 				
-				// Temperature offset calculations
+				//Temperature offset calculations
 				double var1 = (((double)adc_t) / 16384.0 - ((double)dig_T1) / 1024.0) * ((double)dig_T2);
 				double var2 = ((((double)adc_t) / 131072.0 - ((double)dig_T1) / 8192.0) *
 							   (((double)adc_t)/131072.0 - ((double)dig_T1)/8192.0)) * ((double)dig_T3);
@@ -282,7 +283,7 @@ class LectureCapteur implements Runnable
 				double cTemp = (var1 + var2) / 5120.0;
 				double fTemp = cTemp * 1.8 + 32;
 				
-				// Pressure offset calculations
+				//Pressure offset calculations
 				var1 = ((double)t_fine / 2.0) - 64000.0;
 				var2 = var1 * var1 * ((double)dig_P6) / 32768.0;
 				var2 = var2 + var1 * ((double)dig_P5) * 2.0;
@@ -295,7 +296,7 @@ class LectureCapteur implements Runnable
 				var2 = p * ((double) dig_P8) / 32768.0;
 				double pressure = (p + (var1 + var2 + ((double)dig_P7)) / 16.0) / 100;
 				
-				// Humidity offset calculations
+				//Humidity offset calculations
 				double var_H = (((double)t_fine) - 76800.0);
 				var_H = (adc_h - (dig_H4 * 64.0 + dig_H5 / 16384.0 * var_H)) * (dig_H2 / 65536.0 * (1.0 + dig_H6 / 67108864.0 * var_H * (1.0 + dig_H3 / 67108864.0 * var_H)));
 				double humidity = var_H * (1.0 -  dig_H1 * var_H / 524288.0);
@@ -309,7 +310,6 @@ class LectureCapteur implements Runnable
 					}
 				
 				/*
-				// Output data to screen
 				System.out.printf("Temperature in Celsius : %.2f C %n", cTemp);
 				System.out.printf("Temperature in Fahrenheit : %.2f F %n", fTemp);
 				System.out.printf("Pressure : %.2f hPa %n", pressure);
@@ -317,7 +317,7 @@ class LectureCapteur implements Runnable
 				*/
 				//FIN DU CODE TROUVÉ SUR INTERNET <---
 		
-				m_Parent.EnvoyerAuServeur(m_Parent.m_IP, m_Parent.m_Port, String.valueOf("T:" + cTemp + "/P:" + pressure + "/H:" + humidity));	//Envoie l'information (RPM) à la fonction qui va l'envoyer au serveur
+				m_Parent.EnvoyerAuServeur(m_Parent.m_IP, m_Parent.m_Port, String.valueOf("Entrepot/T:" + cTemp + "/P:" + pressure + "/H:" + humidity));	//Envoie l'information (RPM) à la fonction qui va l'envoyer au serveur
 				Thread.sleep(2500);
 			}
 			

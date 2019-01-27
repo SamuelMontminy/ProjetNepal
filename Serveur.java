@@ -1,13 +1,13 @@
 /**
  * @file   Serveur.java
  * @author Samuel Montminy
- * @date   Novembre 2018
- * @brief  Code qui permet de recevoir des donn?es envoy?es par le client tcp/ip pour ensuite les envoyer sur le dashboard Hologram par LTE
+ * @date   Janvier 2019
+ * @brief  Code qui permet de recevoir des données envoyées par le client tcp/ip pour ensuite les envoyer sur le dashboard Hologram par LTE
  *
  * @version 1.0 : Premiere version
  * Environnement de developpement: GitKraken / Notepad++
  * Compilateur: javac (Java version 1.8)
- * Mat?riel: Raspberry Pi Zero W, Module LTE Hologram (+ carte SIM)
+ * Matériel: Raspberry Pi Zero W, Module LTE Hologram (+ carte SIM)
  */
 
 import java.net.*;
@@ -16,7 +16,7 @@ import java.io.*;
 public class Serveur implements Runnable
 {
     final static int NB_OCTETS = 1000;                              //Constante pour le nombre d'octets du tampon memoire du miniserveur
-    int m_nPort = 2228;                                             //Numero du port utilise par le miniserveur
+    int m_nPort = 2228;                                             //Numéro du port utilise par le miniserveur
     ServerSocket m_ssServeur;                                       //Reference vers l'objet ServerSocket
     Thread m_tService;                                              //Reference vers l'objet Thread
     
@@ -24,9 +24,9 @@ public class Serveur implements Runnable
     {		
         try
         {
-            m_ssServeur = new ServerSocket(m_nPort, NB_OCTETS);             //Creation du miniserveur au port specifie (m_nPort = 2228)
-                                                                            //Le miniserveur a un tampon memoire de 1000 octets (NB_OCTETS)
-            m_tService = new Thread(this);                                  //Creation et demarrage de la tache d'ecoute du miniserveur sur le port 2228
+            m_ssServeur = new ServerSocket(m_nPort, NB_OCTETS);             //Création du miniserveur au port specifie (m_nPort = 2228)
+                                                                            //Le miniserveur a un tampon mémoire de 1000 octets (NB_OCTETS)
+            m_tService = new Thread(this);                                  //Creation et démarrage de la tâche d'écoute du miniserveur sur le port 2228
             m_tService.start();
         }
         
@@ -40,10 +40,10 @@ public class Serveur implements Runnable
         }
     }
     
-    // Tache d'ecoute sur le port 2228
+    //Tâche d'écoute sur le port 2228
     public void run()
     {   
-		boolean bError = true;  									//Pour gestion des erreurs
+		boolean bError = true;  												//Pour gestion des erreurs
 		String Informations = "Erreur de lecture du client";
 				
         while(m_tService != null)
@@ -51,17 +51,17 @@ public class Serveur implements Runnable
             try
             {
 				Informations = "Erreur de lecture du client";
-                System.out.println("Attente d'une connexion au serveur...");    //Le miniserveur attend une connexion r?seau... -> BLOQUANT! <-
+                System.out.println("Attente d'une connexion au serveur...");    //Le miniserveur attend une connexion réseau... -> BLOQUANT! <-
                 Socket sConnexion = m_ssServeur.accept();
 
-                System.out.println("Connexion au serveur etablie!");            //Ce message est affiche si une connexion est etablie
+                System.out.println("Connexion au serveur etablie!");            //Ce message est affiché si une connexion est établie
                 
-                InputStream isIn = sConnexion.getInputStream();                 //Objet pour la reception des donn?es
-                ObjectInputStream oisIn = new ObjectInputStream(isIn);          //Recoit les donnees envoyes par le client
-                Informations = (String)oisIn.readObject();               		//Lit le contenu des donnees recues
+                InputStream isIn = sConnexion.getInputStream();                 //Objet pour la reception des données
+                ObjectInputStream oisIn = new ObjectInputStream(isIn);          //Reçoit les données envoyés par le client
+                Informations = (String)oisIn.readObject();               		//Lit le contenu des données reçues
                 //System.out.println(Informations);
                
-                oisIn.close();                                                  //Fermeture des objets de flux de donnees
+                oisIn.close();                                                  //Fermeture des objets de flux de données
                 isIn.close();
             }
             
@@ -80,10 +80,10 @@ public class Serveur implements Runnable
 			
 			try
 			{
-				System.out.println(Informations + " -> � �t� re�u d'un client");
+				System.out.println(Informations + " -> à été reçu d'un client");
 				
-				/* 		//Mettre en commentaire le bloc pour ne pas envoyer � Hologram
-				System.out.println(Informations + " -> sera envoy� � Hologram");
+				/* 		//Mettre en commentaire le bloc pour ne pas envoyer à Hologram
+				System.out.println(Informations + " -> sera envoyé à Hologram");
 				String s = "sudo hologram send " + Informations;    			//Commande bash a etre executee
 				String[] sCmd = {"/bin/bash", "-c", s};             			//Specifie que l'interpreteur de commandes est BASH. Le "-c"
 																				//indique que la commande a executer suit
@@ -102,7 +102,7 @@ public class Serveur implements Runnable
 				}
 
 				Thread.sleep(100);      										//Delai pour laisser le temps au kernel d'agir
-				System.out.println(Informations + " -> � �t� envoy� � Hologram");
+				System.out.println(Informations + " -> à été envoyé à Hologram");
 				*/
 			}
 
