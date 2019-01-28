@@ -444,6 +444,8 @@ class Shutdown implements Runnable
 //Thread qui permet de lire le capteur OneWire DS18B20
 class LectureCapteur implements Runnable
 {
+	Thread m_Thread;
+		
     private ClientEcremeuse m_Parent;				//Référence vers la classe principale (ClientEcremeuse)
 	
 	W1Master w1Master = new W1Master();
@@ -478,7 +480,7 @@ class LectureCapteur implements Runnable
 					Temperature = device.getTemperature();
 				}
 				
-				if (temp != 0)
+				if (Temperature != 0)
 				{
 					System.out.println("Temperature:" + Temperature + " °C");
 				}
