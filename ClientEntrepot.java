@@ -10,8 +10,8 @@
  * Compilateur: javac (Java version 1.8)
  * Matériel: Raspberry Pi Zero W
  */
- 
-import java.net.*;              						//Importation du package io pour les accès aux fichiers
+
+import java.net.*;										//Importation du package io pour les accès aux fichiers
 import java.io.*;
 import java.io.IOException;
 
@@ -317,8 +317,14 @@ class LectureCapteur implements Runnable
 				*/
 				//FIN DU CODE TROUVÉ SUR INTERNET <---
 		
-				m_Parent.EnvoyerAuServeur(m_Parent.m_IP, m_Parent.m_Port, String.valueOf("Entrepot/T:" + cTemp + "/P:" + pressure + "/H:" + humidity));	//Envoie l'information (RPM) à la fonction qui va l'envoyer au serveur
-				Thread.sleep(2500);
+				pressure = pressure / 10;								//Pour avoir la pression en bars au lieu de deci-bars
+				
+				String Temperature = String.format("%1$.3f", cTemp);
+				String Pression = String.format("%1$.3f", pressure);
+				String Humidite = String.format("%1$.3f", humidity);
+				
+				m_Parent.EnvoyerAuServeur(m_Parent.m_IP, m_Parent.m_Port, String.valueOf("Entrepot/T:" + Temperature + "/P:" + Pression + "/H:" + Humidite));	//Envoie l'information (RPM) à la fonction qui va l'envoyer au serveur
+				Thread.sleep(10000);
 			}
 			
 			catch(Exception e)

@@ -187,7 +187,7 @@ public class ClientEcremeuse
         try
         {
             String sCommande = "echo \"" + gpioid + "\">/sys/class/gpio/unexport";  //Commande bash à être exécutée
-            String[] sCmd = {"/bin/bash", "-c", sCommande};                       	//Spécifie que l'interpreteur de commandes est BASH. Le "-c" indique que la commande � ex�cuter suit
+            String[] sCmd = {"/bin/bash", "-c", sCommande};                       	//Spécifie que l'interpreteur de commandes est BASH. Le "-c" indique que la commande � ex�cuter suit
                                                                                     
             System.out.println(sCmd[0] + " " + sCmd[1] + " " + sCmd[2]);            //Affiche la commande à exécuter dans la console Java
             Process p = Runtime.getRuntime().exec(sCmd);                            //Exécute la commande par le système Linux (le programme Java
@@ -490,7 +490,7 @@ class LectureCapteur implements Runnable
 				//FIN DU CODE TROUVÉ SUR INTERNET <---
 				
 				m_Parent.EnvoyerAuServeur(m_Parent.m_IP, m_Parent.m_Port, String.valueOf("Écrémeuse/T:" + Temperature));	//Envoie l'information (Température) à la fonction qui va l'envoyer au serveur
-				Thread.sleep(2500);
+				Thread.sleep(10000);
 			}
 			
 			catch(Exception e)
