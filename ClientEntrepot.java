@@ -326,9 +326,10 @@ class LectureCapteur implements Runnable				//Runnable puisque la classe contien
 				String Pression = String.format("%1$.3f", pressure);
 				String Humidite = String.format("%1$.3f", humidity);
 				
-				//À CHANGER
-				m_Parent.EnvoyerAuServeur(m_Parent.m_IP, m_Parent.m_Port, String.valueOf("Entrepot/T:" + Temperature + "/P:" + Pression + "/H:" + Humidite));	//Envoie l'information (RPM) à la fonction qui va l'envoyer au serveur
-				Thread.sleep(10000);
+				//ID (EN) = Entrepot, R à 0 puisque nous nous en servons pas. C'est une structure de fichier json qui sera ensuite transformée en fichier csv par Hologram
+				//Cette string sera envoyée au serveur qui l'envoiera ensuite à Hologram, qui lui va l'envoyer à S3 puis à QuickSight en fichier csv
+				m_Parent.EnvoyerAuServeur(m_Parent.m_IP, m_Parent.m_Port, String.valueOf("{ \"ID\":\"EN\", \"T\":\"" + cTemp + "\", \"P\":\"" + pressure + "\", \"H\":\"" + humidity + "\", \"R\":\"0\" }"));
+				Thread.sleep(25000);
 			}
 			
 			catch(Exception e)

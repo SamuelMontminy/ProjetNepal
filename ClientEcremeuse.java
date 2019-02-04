@@ -359,8 +359,9 @@ class CalculeRPM implements Runnable				//Runnable puisque la classe contient un
 				RPM = 60000 / MilliSecondes;																		//Convertit le temps en millisecondes en RPM
 				System.out.println("Tour en: " + String.valueOf(MilliSecondes) + "ms, RPM: " + String.valueOf(RPM));
 				
-				//À CHANGER
-				m_Parent.EnvoyerAuServeur(m_Parent.m_IP, m_Parent.m_Port, String.valueOf("Écrémeuse/RPM:" + RPM));	//Envoie l'information (RPM) à la fonction qui va l'envoyer au serveur
+				//ID (EC) = Écrémeuse, T,P,H à 0 puisque nous nous en servons pas. C'est une structure de fichier json qui sera ensuite transformée en fichier csv par Hologram
+				//Cette string sera envoyée au serveur qui l'envoiera ensuite à Hologram, qui lui va l'envoyer à S3 puis à QuickSight en fichier csv
+				m_Parent.EnvoyerAuServeur(m_Parent.m_IP, m_Parent.m_Port, String.valueOf("{ \"ID\":\"EC\", \"T\":\"0\", \"P\":\"0\", \"H\":\"0\", \"R\":\"" + RPM + "\" }"));
 				m_Parent.ResetCountdown();																			//Réinitialise le compteur d'inactivité
 			}
 			
@@ -493,9 +494,10 @@ class LectureCapteur implements Runnable			//Runnable puisque la classe contient
 				}*/
 				//FIN DU CODE TROUVÉ SUR INTERNET <---
 				
-				//À CHANGER
-				m_Parent.EnvoyerAuServeur(m_Parent.m_IP, m_Parent.m_Port, String.valueOf("Écrémeuse/T:" + Temperature));	//Envoie l'information (Température) à la fonction qui va l'envoyer au serveur
-				Thread.sleep(10000);
+				//ID (EC) = Écrémeuse, R,P,H à 0 puisque nous nous en servons pas. C'est une structure de fichier json qui sera ensuite transformée en fichier csv par Hologram
+				//Cette string sera envoyée au serveur qui l'envoiera ensuite à Hologram, qui lui va l'envoyer à S3 puis à QuickSight en fichier csv
+				m_Parent.EnvoyerAuServeur(m_Parent.m_IP, m_Parent.m_Port, String.valueOf("{ \"ID\":\"EC\", \"T\":\"" + Temperature + "\", \"P\":\"0\", \"H\":\"0\", \"R\":\"0\" }"));	
+				Thread.sleep(25000);
 			}
 			
 			catch (Exception e)
