@@ -6,6 +6,7 @@
  *         Le temps entre chaque front montant est ensuite converti en RPM puis est envoyé au serveur par socket tcp/ip.
  *		   Ce code incorpore aussi un thread qui permet de lire une sonde DS18B20 par protocole OneWire pour avoir la température du lait dans l'écrémeuse.
  *		   De plus, il y a un thread qui permet d'éteindre le Pi pour économiser de l'énergie lorsque aucun front montant n'est détecté pendant un certain nombre de temps.
+ *		   Le code doit être compilé avec /pi4j -c ClientEcremeuse.java et doit être lancé avec /pi4j -r ClientEcremeuse 192.168.4.1 (Adresse IP du serveur) 2228 (Port de communication avec le serveur)
  *
  * @version 1.0 : Première version
  * @version 1.1 : Distinction entre les codes clients. Ce code sera seulement utilisé par l'écrémeuse (RPM & DS18B20)
@@ -14,11 +15,12 @@
  * Matériel: Raspberry Pi Zero W
  */
  
-import java.time.Duration;
+import java.time.Duration;								//Pour calculer le temps entre chaque fronts montants
 import java.time.Instant;
 import java.net.*;              						//Importation du package io pour les accès aux fichiers
 import java.io.*;
 
+//Librairies pour la lecture du capteur en I2C avec Pi4J
 import com.pi4j.component.temperature.TemperatureSensor;
 import com.pi4j.io.w1.W1Master;
 import com.pi4j.temperature.TemperatureScale;
@@ -27,16 +29,17 @@ public class ClientEcremeuse
 {
     Socket m_sClient;           						//Référence de l'objet Socket
 	
-	public Shutdown m_objShutdown;
-	public CalculeRPM m_objCalculeRPM;
-	public LectureCapteur m_objLectureCapteur;
+	public Shutdown m_objShutdown;						//Objet pour la classe qui éteint le Pi après un délai d'inactivité
+	public CalculeRPM m_objCalculeRPM;					//Objet pour la classe qui calcule le RPM avec la reed switch branchée sur GPIO 3 et GND
+	public LectureCapteur m_objLectureCapteur;			//Objet pour la classe de lecture du capteur de température (DS18B20)
 	
 	public static final String GPIO_IN = "in";        	//Pour configurer la direction de la broche GPIO   
-	public static final String NUMBER_GPIO = "3";   	//ID du GPIO de le Raspberry Pi avec le capteur Reed switch
-	public static final String NAME_GPIO = "gpio3";     //Nom du GPIO pour le Raspberry Pi
+	public static final String NUMBER_GPIO = "3";   	//ID du GPIO de le Raspberry Pi avec le capteur Reed switch, gpio 3 parce que c'est la pin "reset" du Pi
+														//qui lui permet de sortir du mode veille lorsqu'elle devient à un niveau haut
+	public static final String NAME_GPIO = "gpio3";     //Nom du GPIO pour le kernel Raspbian
 	
-	String m_IP;
-	int m_Port;
+	String m_IP;										//Adresse du serveur
+	int m_Port;											//Port de communication avec le serveur
     
     public ClientEcremeuse()
     {
@@ -45,22 +48,22 @@ public class ClientEcremeuse
     //Constructeur de la classe, reçoit l'adresse ip et le port de la fonction main
     public ClientEcremeuse(String sIP, int nPort)
     {   
-		String Message = "Erreur client";
+		String Message = "";
 		
 		try
 		{
-			gpioUnexport(NUMBER_GPIO);          		//Déffectation du GPIO #3 (au cas ou ce GPIO est déjè défini par un autre programme)
-			gpioExport(NUMBER_GPIO);            		//Affectation du GPIO #3
-			gpioSetdir(NAME_GPIO, GPIO_IN);   			//Place GPIO #3 en entrée
+			gpioUnexport(NUMBER_GPIO);          				//Déffectation du GPIO #3 (au cas ou ce GPIO est déjè défini par un autre programme)
+			gpioExport(NUMBER_GPIO);            				//Affectation du GPIO #3
+			gpioSetdir(NAME_GPIO, GPIO_IN);   					//Place GPIO #3 en entrée
 			
-			m_objShutdown = new Shutdown(this);
-			m_objCalculeRPM = new CalculeRPM(this);
-			m_objLectureCapteur = new LectureCapteur(this);
+			m_objShutdown = new Shutdown(this);					//Instancie l'objet de la classe Shutdown avec une référence vers la classe principale (ClientEcremeuse)
+			m_objCalculeRPM = new CalculeRPM(this);				//Instancie l'objet de la classe CalculeRPM avec une référence vers la classe principale (ClientEcremeuse)
+			m_objLectureCapteur = new LectureCapteur(this);		//Instancie l'objet de la classe LectureCapteur avec une référence vers la classe principale (ClientEcremeuse)
 			
-			m_IP = sIP;
+			m_IP = sIP;											//Pour que les variables soient accessibles partout dans la classe
 			m_Port = nPort;
 			
-			while (true)
+			while (true)										//Rien dans la boucle infinie du main puisque le code de lecture du capteur roule dans un thread appart
 			{
 				
 			}
@@ -80,7 +83,7 @@ public class ClientEcremeuse
         {
 			System.out.println(Message + " -> à été reçu par la fonction");
 						
-			///*		Mettre en commentaire le bloc pour ne pas envoyer au serveur
+			///*		Mettre en commentaire le bloc pour ne pas envoyer au serveur<- DÉBUT DU BLOC
 			System.out.println(Message + " -> sera envoyé au serveur");
             m_sClient = new Socket(sIP, nPort);                                     //Objet Socket pour établir la connexion au miniserveur
             
@@ -92,22 +95,22 @@ public class ClientEcremeuse
             oosOut.close();
             osOut.close();
 			System.out.println(Message + " -> à été envoyé au serveur");
-			//*/
+			//*/																	//<- FIN DU BLOC
         }
         
-        catch(UnknownHostException e)
+        catch (UnknownHostException e)
         {
             System.out.println(e.toString());                                       //Nom ou adresse du miniserveur inexistant
         }
-        catch(IOException e)
+        catch (IOException e)
         {
             System.out.println(e.toString());                                       //Problème de communication réseau
         }
-        catch(SecurityException e)
+        catch (SecurityException e)
         {
             System.out.println(e.toString());                                       //Problème de sécurité (si cela est géré...)
         }
-        catch(Exception e)                          
+        catch (Exception e)                          
         {
             System.out.println(e.toString());                                       //Autre erreur...
         }
@@ -115,7 +118,7 @@ public class ClientEcremeuse
 
     public static void main(String[] args)
     {
-        int argc = 0;
+        int argc = 0;																//Variable pour le compte du nombre d'arguments lors de l'appel du code
         
         for (String argument : args)                                                //Compte le nombre d'arguments dans la ligne de commande
         {
@@ -126,12 +129,12 @@ public class ClientEcremeuse
         {
             try
             {
-                Integer iArgs = new Integer(args[1]);                               //Conversion du 2e paramètre en entier
+                Integer iArgs = new Integer(args[1]);                               //Conversion du 2e paramètre (port) en entier
                 
                 ClientEcremeuse obj = new ClientEcremeuse(args[0], iArgs.intValue());     			//Connexion au serveur s'il existe...
             }
             
-            catch(NumberFormatException e)
+            catch (NumberFormatException e)
             {
                 System.out.println(e.toString());
             }
@@ -167,7 +170,7 @@ public class ClientEcremeuse
             fis.close();                                                                                    //Fermeture du flux de données
         }
 		
-        catch(Exception e)
+        catch (Exception e)
         {
             // Affiche l'erreur survenue en Java
             sLecture = "-1";
@@ -205,7 +208,7 @@ public class ClientEcremeuse
 			Thread.sleep(20);   												//Délai pour laisser le temps au kernel d'agir
         }
 		
-        catch(Exception e)      												//Traitement de l'erreur par la VM Java (différent de l'erreur par l'interpreteur BASH)
+        catch (Exception e)      												//Traitement de l'erreur par la VM Java (différent de l'erreur par l'interpreteur BASH)
         {
 			//Affiche l'erreur survenue en Java
             bError = false;
@@ -243,7 +246,7 @@ public class ClientEcremeuse
             Thread.sleep(100);      											//Délai pour laisser le temps au kernel d'agir
         }
 		 
-		catch(Exception e)         												//Traitement de l'erreur par la VM Java (différent de l'erreur par l'interpreteur BASH)
+		catch (Exception e)         											//Traitement de l'erreur par la VM Java (différent de l'erreur par l'interpreteur BASH)
 		{
 			//Affiche l'erreur survenue en Java
 			bError = false;
@@ -272,7 +275,7 @@ public class ClientEcremeuse
             Process p = Runtime.getRuntime().exec(sCmd);                    	//Exécute la commande par le système Linux (le programme Java doit 
 																				//être démarré par le root pour les accès aux GPIO)
      
-            if(p.getErrorStream().available() > 0)        						//Vérification s'il y a une erreur d'exécution par l'interpreteur de commandes BASH
+            if (p.getErrorStream().available() > 0)        						//Vérification s'il y a une erreur d'exécution par l'interpreteur de commandes BASH
             {
                 //Affiche l'erreur survenue
                 bError = false;
@@ -285,7 +288,7 @@ public class ClientEcremeuse
             Thread.sleep(100);      											//Délai pour laisser le temps au kernel d'agir
 	    }
 		
-	    catch(Exception e)
+	    catch (Exception e)
 	    {
 			//Affiche l'erreur survenue en Java
 			bError = false;
@@ -298,7 +301,7 @@ public class ClientEcremeuse
 }
 
 //Thread qui permet de calculer la vitesse de rotation en utilisant le temps entre chaque front montant
-class CalculeRPM implements Runnable
+class CalculeRPM implements Runnable				//Runnable puisque la classe contient un thread
 {
 	long MilliSecondes;
 	long RPM;
@@ -320,15 +323,15 @@ class CalculeRPM implements Runnable
 			m_Thread.start();						//Démarre le thread
 		}
 		
-		catch(Exception e)
+		catch (Exception e)
 		{
 			System.out.println(e.toString());
 		}
 	}
 	
-	public void run()								//Thread qui roule en parallèle de la classe principale
+	public void run()								//Thread qui roule en parallèle de la classe principale, fonction appelée automatiquement après le constructeur de la classe
 	{
-		while (true)
+		while (true)								//Boucle infinie sinon le thread se termine
 		{
 			try
 			{
@@ -351,16 +354,17 @@ class CalculeRPM implements Runnable
 				
 				end = Instant.now();
 				
-				duree = Duration.between(start, end);
+				duree = Duration.between(start, end);		//La durée entre deux fronts montants (en millisecondes) est la durée entre start et end
 				MilliSecondes = duree.toMillis();
 				RPM = 60000 / MilliSecondes;																		//Convertit le temps en millisecondes en RPM
 				System.out.println("Tour en: " + String.valueOf(MilliSecondes) + "ms, RPM: " + String.valueOf(RPM));
 				
+				//À CHANGER
 				m_Parent.EnvoyerAuServeur(m_Parent.m_IP, m_Parent.m_Port, String.valueOf("Écrémeuse/RPM:" + RPM));	//Envoie l'information (RPM) à la fonction qui va l'envoyer au serveur
 				m_Parent.ResetCountdown();																			//Réinitialise le compteur d'inactivité
 			}
 			
-			catch(Exception e)
+			catch (Exception e)
 			{
 				System.out.println(e.toString());
 			}
@@ -369,13 +373,12 @@ class CalculeRPM implements Runnable
 }
 
 //Thread qui permet d'éteindre le Pi Zero après deux minutes d'inactivité (pas de front montants détectés) pour conserver la batterie
-class Shutdown implements Runnable
+class Shutdown implements Runnable					//Runnable puisque la classe contient un thread
 {
-	boolean EnVie;
 	Thread m_Thread;
     private ClientEcremeuse m_Parent;				//Référence vers la classe principale (ClientEcremeuse)
 	
-	int m_Countdown;
+	int m_Countdown;								//Compte pour la fermeture du Pi, si il atteint 0 le Pi s'éteint
 	
 	public Shutdown(ClientEcremeuse Parent)			//Constructeur
 	{
@@ -387,29 +390,27 @@ class Shutdown implements Runnable
 			m_Thread.start();						//Démarre le thread
 			
 			m_Countdown = 120;						//Après deux minutes d'inactivité, le pi s'éteint
-			EnVie = true;
 		}
 		
-		catch(Exception e)
+		catch (Exception e)
 		{
 			System.out.println(e.toString());
 		}
 	}
 	
-	public void ResetCountdown()					//Permet de rénitialiser la valeur du compteur d'inactivité
+	public void ResetCountdown()					//Permet de rénitialiser la valeur du compteur d'inactivité (quand un front montant est détecté)
 	{
 		m_Countdown = 120;
 	}
 	
-	public void run()								//Thread qui roule en parallèle de la classe principale
+	public void run()								//Thread qui roule en parallèle de la classe principale, fonction appelée automatiquement après le constructeur de la classe
 	{
-		while (true)
+		while (true)								//Boucle infinie sinon le thread se termine
 		{
 			try
 			{
-				if (m_Countdown <= 0 && EnVie == true)										//Si aucun front montant n'à été détecté dans les deux dernières minutes
+				if (m_Countdown <= 0)														//Si aucun front montant n'à été détecté dans les deux dernières minutes
 				{
-					EnVie = false;
 					String sCommande = "sudo shutdown now";  								//Commande bash à être exécutée
 					String[] sCmd = {"/bin/bash", "-c", sCommande};                       	//Spécifie que l'interpreteur de commandes est BASH. Le "-c" indique que la commande à exécuter suit
 																							
@@ -425,7 +426,7 @@ class Shutdown implements Runnable
 					}
 				}
 				
-				else																		//Décrémente la valeur du compteur d'inactivité
+				else																		//Décrémente la valeur du compteur d'inactivité à chaque seconde
 				{
 					m_Countdown--;
 					Thread.sleep(1000);
@@ -433,7 +434,7 @@ class Shutdown implements Runnable
 				}
 			}
 			
-			catch(Exception e)
+			catch (Exception e)
 			{
 				System.out.println(e.toString());
 			}
@@ -442,13 +443,13 @@ class Shutdown implements Runnable
 }
 
 //Thread qui permet de lire le capteur OneWire DS18B20
-class LectureCapteur implements Runnable
+class LectureCapteur implements Runnable			//Runnable puisque la classe contient un thread
 {
 	Thread m_Thread;
 		
     private ClientEcremeuse m_Parent;				//Référence vers la classe principale (ClientEcremeuse)
 	
-	W1Master w1Master = new W1Master();
+	W1Master w1Master = new W1Master();				//Besoin pour le code trouvé sur internet		
 		
 	double Temperature = 0;
 	
@@ -462,25 +463,26 @@ class LectureCapteur implements Runnable
 			m_Thread.start();						//Démarre le thread
 		}
 		
-		catch(Exception e)
+		catch (Exception e)
 		{
 			System.out.println(e.toString());
 		}
 	}
 	
-	public void run()								//Thread qui roule en parallèle de la classe principale
+	public void run()								//Thread qui roule en parallèle de la classe principale, fonction appelée automatiquement après le constructeur de la classe
 	{	
-		while (true)
+		while (true)								//Boucle infinie sinon le thread se termine
 		{
 			try
 			{
 				//CODE TROUVÉ SUR INTERNET <--- Projet github: https://github.com/oksbwn/IOT_Raspberry_Pi/tree/master/src/in/weargenius
+				//Agis comme un for each --> met les elements de la classe température dans objet device
 				for (TemperatureSensor device : w1Master.getDevices(TemperatureSensor.class)) 
 				{
 					Temperature = device.getTemperature();
 				}
-				
-				if (Temperature != 0)
+				 
+				/*if (Temperature != 0)
 				{
 					System.out.println("Temperature:" + Temperature + " °C");
 				}
@@ -488,14 +490,15 @@ class LectureCapteur implements Runnable
 				else
 				{
 					System.out.println("Erreur lecture capteur");
-				}
+				}*/
 				//FIN DU CODE TROUVÉ SUR INTERNET <---
 				
+				//À CHANGER
 				m_Parent.EnvoyerAuServeur(m_Parent.m_IP, m_Parent.m_Port, String.valueOf("Écrémeuse/T:" + Temperature));	//Envoie l'information (Température) à la fonction qui va l'envoyer au serveur
 				Thread.sleep(10000);
 			}
 			
-			catch(Exception e)
+			catch (Exception e)
 			{
 				System.out.println(e.toString());
 			}

@@ -3,6 +3,7 @@
  * @author Samuel Montminy
  * @date   Janvier 2019
  * @brief  Code qui permet de lire le capteur BME280 par I2C et puis et envoyer les données au serveur par socket tcp/ip
+ *		   Le code doit être compilé avec /pi4j -c ClientEntrepot.java et doit être lancé avec /pi4j -r ClientEntrepot 192.168.4.1 (Adresse IP du serveur) 2228 (Port de communication avec le serveur)
  *
  * @version 1.0 : Première version
  * @version 1.1 : Distinction entre les codes clients. Ce code sera seulement utilisé par l'entrepot (BME280)
@@ -15,6 +16,7 @@ import java.net.*;										//Importation du package io pour les accès aux fich
 import java.io.*;
 import java.io.IOException;
 
+//Librairies pour la lecture du capteur en I2C avec Pi4J
 import com.pi4j.io.i2c.I2CBus;
 import com.pi4j.io.i2c.I2CDevice;
 import com.pi4j.io.i2c.I2CFactory;
@@ -23,10 +25,10 @@ public class ClientEntrepot
 {
     Socket m_sClient;           						//Référence de l'objet Socket
 	
-	public LectureCapteur m_objCapteur;
+	public LectureCapteur m_objCapteur;					//Objet pour la classe pour la lecture du capteur
 	
-	String m_IP;
-	int m_Port;
+	String m_IP;										//Adresse du serveur
+	int m_Port;											//Port de communication avec le serveur
     
     public ClientEntrepot()
     {
@@ -35,16 +37,16 @@ public class ClientEntrepot
     //Constructeur de la classe, reçoit l'adresse ip et le port de la fonction main
     public ClientEntrepot(String sIP, int nPort)
     {   
-		String Message = "Erreur client";
+		String Message = "";
 		
 		try
 		{	
-			m_objCapteur = new LectureCapteur(this);
+			m_objCapteur = new LectureCapteur(this);	//Instancie l'objet de la classe LectureCapteur avec une référence vers la classe principale (ClientEntrepot)
 			
-			m_IP = sIP;
+			m_IP = sIP;									//Pour que les variables soient accessibles partout dans la classe
 			m_Port = nPort;
 			
-			while (true)
+			while (true)								//Rien dans la boucle infinie du main puisque le code de lecture du capteur roule dans un thread appart
 			{
 				
 			}
@@ -64,19 +66,18 @@ public class ClientEntrepot
         {
 			System.out.println(Message + " -> à été reçu par la fonction");
 						
-			///*		Mettre en commentaire le bloc pour ne pas envoyer au serveur
+			///*		Mettre en commentaire le bloc pour ne pas envoyer au serveur<- DÉBUT DU BLOC
 			System.out.println(Message + " -> sera envoyé au serveur");
             m_sClient = new Socket(sIP, nPort);                                     //Objet Socket pour établir la connexion au miniserveur
             
             OutputStream osOut = m_sClient.getOutputStream();                       //Requête vers le serveur... (flux de données)
             ObjectOutputStream oosOut = new ObjectOutputStream(osOut);
-            oosOut.writeObject(Message);
+            oosOut.writeObject(Message);											//Envoie les données (qui sont dans la variable message)
 
-            //Fermeture des objets de flux de données
-            oosOut.close();
+            oosOut.close();															//Fermeture des objets de flux de données
             osOut.close();
 			System.out.println(Message + " -> à été envoyé au serveur");
-			//*/
+			//*/																	//- FIN DU BLOC
         }
         
         catch(UnknownHostException e)
@@ -99,7 +100,7 @@ public class ClientEntrepot
 
     public static void main(String[] args)
     {
-        int argc = 0;
+        int argc = 0;																//Variable pour le compte du nombre d'arguments lors de l'appel du code
         
         for (String argument : args)                                                //Compte le nombre d'arguments dans la ligne de commande
         {
@@ -110,7 +111,7 @@ public class ClientEntrepot
         {
             try
             {
-                Integer iArgs = new Integer(args[1]);                               //Conversion du 2e paramètre en entier
+                Integer iArgs = new Integer(args[1]);                               //Conversion du 2e paramètre (port) en entier
                 
                 ClientEntrepot obj = new ClientEntrepot(args[0], iArgs.intValue()); //Connexion au serveur s'il existe...
             }
@@ -129,19 +130,19 @@ public class ClientEntrepot
 }
 
 //Thread qui permet de calculer la vitesse de rotation en utilisant le temps entre chaque front montant
-class LectureCapteur implements Runnable
+class LectureCapteur implements Runnable				//Runnable puisque la classe contient un thread
 {
-	String Message = "Erreur Lecture Capteur";
-	Thread m_Thread;
+	String Message = "";								//Les données vont être dans cette variable pour les envoyer au serveur
+	Thread m_Thread;									
     private ClientEntrepot m_Parent;					//Référence vers la classe principale (ClientEntrepot)
 		
 	public LectureCapteur(ClientEntrepot Parent)		//Constructeur
 	{
 		try
 		{
-			m_Parent = Parent;
+			m_Parent = Parent;							//Référence vers la classe principale (ClientEntrepot)
 			
-			m_Thread = new Thread(this);				//Crée le thread
+			m_Thread = new Thread(this);				//Crée le thread dans cette classe
 			m_Thread.start();							//Démarre le thread
 		}
 		
@@ -151,12 +152,14 @@ class LectureCapteur implements Runnable
 		}
 	}
 	
-	public void run()									//Thread qui roule en parallèle de la classe principale
+	public void run()									//Thread qui roule en parallèle de la classe principale, fonction appelée automatiquement après le constructeur de la classe
 	{
-		while (true)
+		while (true)									//Boucle infinie sinon le thread se termine
 		{
 			try
 			{
+				Message = "Erreur Lecture Capteur";		//Permet de savoir si il y a eu une erreur de lecture de capteur (la variable va rester inchangée)
+
 				//CODE TROUVÉ SUR INTERNET <--- Projet github: https://github.com/ControlEverythingCommunity/BME280/blob/master/Java/BME280.java
 				//Create I2C bus
 				I2CBus bus = I2CFactory.getInstance(I2CBus.BUS_1);
@@ -323,6 +326,7 @@ class LectureCapteur implements Runnable
 				String Pression = String.format("%1$.3f", pressure);
 				String Humidite = String.format("%1$.3f", humidity);
 				
+				//À CHANGER
 				m_Parent.EnvoyerAuServeur(m_Parent.m_IP, m_Parent.m_Port, String.valueOf("Entrepot/T:" + Temperature + "/P:" + Pression + "/H:" + Humidite));	//Envoie l'information (RPM) à la fonction qui va l'envoyer au serveur
 				Thread.sleep(10000);
 			}

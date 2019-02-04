@@ -5,6 +5,7 @@
  * @brief  Code qui permet de déterminer la vitesse de rotation de la centrifugeuse en détectant les fronts montants sur un gpio.
  *         Le temps entre chaque front montant est ensuite converti en RPM puis est envoyé au serveur par socket tcp/ip.
  *		   De plus, il y a un thread qui permet d'éteindre le Pi pour économiser de l'énergie lorsque aucun front montant n'est détecté pendant un certain nombre de temps.
+ *		   Le code doit être compilé avec /javac ClientCentrifugeuse.java et doit être lancé avec /java ClientCentrifugeuse 192.168.4.1 (Adresse IP du serveur) 2228 (Port de communication avec le serveur)
  *
  * @version 1.0 : Première version
  * @version 1.1 : Distinction entre les codes clients. Ce code sera seulement utilisé par la centrifugeuse (RPM)
@@ -13,7 +14,7 @@
  * Matériel: Raspberry Pi Zero W
  */
  
-import java.time.Duration;
+import java.time.Duration;								//Pour calculer le temps entre chaque fronts montants
 import java.time.Instant;
 import java.net.*;              						//Importation du package io pour les accès aux fichiers
 import java.io.*;
@@ -22,15 +23,16 @@ public class ClientCentrifugeuse
 {
     Socket m_sClient;           						//Référence de l'objet Socket
 	
-	public Shutdown m_objShutdown;
-	public CalculeRPM m_objCalculeRPM;
+	public Shutdown m_objShutdown;						//Objet pour la classe qui éteint le Pi après un délai d'inactivité
+	public CalculeRPM m_objCalculeRPM;					//Objet pour la classe qui calcule le RPM avec la reed switch branchée sur GPIO 3 et GND
 	
 	public static final String GPIO_IN = "in";        	//Pour configurer la direction de la broche GPIO   
-	public static final String NUMBER_GPIO = "3";   	//ID du GPIO de le Raspberry Pi avec le capteur Reed switch
-	public static final String NAME_GPIO = "gpio3";     //Nom du GPIO pour le Raspberry Pi
+	public static final String NUMBER_GPIO = "3";   	//ID du GPIO de le Raspberry Pi avec le capteur Reed switch, gpio 3 parce que c'est la pin reset du pi
+														//qui lui permet de sortir du mode veille lorsqu'elle devient à un niveau haut
+	public static final String NAME_GPIO = "gpio3";     //Nom du GPIO pour le kernel Raspbian
 	
-	String m_IP;
-	int m_Port;
+	String m_IP;										//Adresse du serveur
+	int m_Port;											//Port de communication avec le serveur
     
     public ClientCentrifugeuse()
     {
@@ -39,7 +41,7 @@ public class ClientCentrifugeuse
     //Constructeur de la classe, reçoit l'adresse ip et le port de la fonction main
     public ClientCentrifugeuse(String sIP, int nPort)
     {   
-		String Message = "Erreur client";
+		String Message = "";
 		
 		try
 		{
@@ -47,13 +49,13 @@ public class ClientCentrifugeuse
 			gpioExport(NUMBER_GPIO);            		//Affectation du GPIO #3
 			gpioSetdir(NAME_GPIO, GPIO_IN);   			//Place GPIO #3 en entrée
 			
-			m_objShutdown = new Shutdown(this);
-			m_objCalculeRPM = new CalculeRPM(this);
+			m_objShutdown = new Shutdown(this);			//Instancie l'objet de la classe Shutdown avec une référence vers la classe principale (ClientCentrifugeuse)
+			m_objCalculeRPM = new CalculeRPM(this);		//Instancie l'objet de la classe CalculeRPM avec une référence vers la classe principale (ClientCentrifugeuse)
 			
-			m_IP = sIP;
+			m_IP = sIP;									//Pour que les variables soient accessibles partout dans la classe
 			m_Port = nPort;
 			
-			while (true)
+			while (true)								//Rien dans la boucle infinie du main puisque le code de lecture du capteur roule dans un thread appart
 			{
 				
 			}
@@ -73,7 +75,7 @@ public class ClientCentrifugeuse
         {
 			System.out.println(Message + " -> à été reçu par la fonction");
 						
-			///*		Mettre en commentaire le bloc pour ne pas envoyer au serveur
+			///*		Mettre en commentaire le bloc pour ne pas envoyer au serveur<- DÉBUT DU BLOC
 			System.out.println(Message + " -> sera envoyé au serveur");
             m_sClient = new Socket(sIP, nPort);                                     //Objet Socket pour établir la connexion au miniserveur
             
@@ -85,22 +87,22 @@ public class ClientCentrifugeuse
             oosOut.close();
             osOut.close();
 			System.out.println(Message + " -> à été envoyé au serveur");
-			//*/
+			//*/																	//<- FIN DU BLOC
         }
         
-        catch(UnknownHostException e)
+        catch (UnknownHostException e)
         {
             System.out.println(e.toString());                                       //Nom ou adresse du miniserveur inexistant
         }
-        catch(IOException e)
+        catch (IOException e)
         {
             System.out.println(e.toString());                                       //Problème de communication réseau
         }
-        catch(SecurityException e)
+        catch (SecurityException e)
         {
             System.out.println(e.toString());                                       //Problème de sécurité (si cela est géré...)
         }
-        catch(Exception e)                          
+        catch (Exception e)                          
         {
             System.out.println(e.toString());                                       //Autre erreur...
         }
@@ -108,7 +110,7 @@ public class ClientCentrifugeuse
 
     public static void main(String[] args)
     {
-        int argc = 0;
+        int argc = 0;																//Variable pour le compte du nombre d'arguments lors de l'appel du code
         
         for (String argument : args)                                                //Compte le nombre d'arguments dans la ligne de commande
         {
@@ -119,12 +121,12 @@ public class ClientCentrifugeuse
         {
             try
             {
-                Integer iArgs = new Integer(args[1]);                               //Conversion du 2e paramètre en entier
+                Integer iArgs = new Integer(args[1]);                               //Conversion du 2e paramètre (port) en entier
                 
                 ClientCentrifugeuse obj = new ClientCentrifugeuse(args[0], iArgs.intValue());     			//Connexion au serveur s'il existe...
             }
             
-            catch(NumberFormatException e)
+            catch (NumberFormatException e)
             {
                 System.out.println(e.toString());
             }
@@ -160,7 +162,7 @@ public class ClientCentrifugeuse
             fis.close();                                                                                    //Fermeture du flux de données
         }
 		
-        catch(Exception e)
+        catch (Exception e)
         {
             // Affiche l'erreur survenue en Java
             sLecture = "-1";
@@ -198,7 +200,7 @@ public class ClientCentrifugeuse
 			Thread.sleep(20);   												//Délai pour laisser le temps au kernel d'agir
         }
 		
-        catch(Exception e)      												//Traitement de l'erreur par la VM Java (différent de l'erreur par l'interpreteur BASH)
+        catch (Exception e)      												//Traitement de l'erreur par la VM Java (différent de l'erreur par l'interpreteur BASH)
         {
 			//Affiche l'erreur survenue en Java
             bError = false;
@@ -236,7 +238,7 @@ public class ClientCentrifugeuse
             Thread.sleep(100);      											//Délai pour laisser le temps au kernel d'agir
         }
 		 
-		catch(Exception e)         												//Traitement de l'erreur par la VM Java (différent de l'erreur par l'interpreteur BASH)
+		catch (Exception e)         											//Traitement de l'erreur par la VM Java (différent de l'erreur par l'interpreteur BASH)
 		{
 			//Affiche l'erreur survenue en Java
 			bError = false;
@@ -278,7 +280,7 @@ public class ClientCentrifugeuse
             Thread.sleep(100);      											//Délai pour laisser le temps au kernel d'agir
 	    }
 		
-	    catch(Exception e)
+	    catch (Exception e)
 	    {
 			//Affiche l'erreur survenue en Java
 			bError = false;
@@ -291,7 +293,7 @@ public class ClientCentrifugeuse
 }
 
 //Thread qui permet de calculer la vitesse de rotation en utilisant le temps entre chaque front montant
-class CalculeRPM implements Runnable
+class CalculeRPM implements Runnable				//Runnable puisque la classe contient un thread
 {
 	long MilliSecondes;
 	long RPM;
@@ -313,15 +315,15 @@ class CalculeRPM implements Runnable
 			m_Thread.start();						//Démarre le thread
 		}
 		
-		catch(Exception e)
+		catch (Exception e)
 		{
 			System.out.println(e.toString());
 		}
 	}
 	
-	public void run()								//Thread qui roule en parallèle de la classe principale
+	public void run()								//Thread qui roule en parallèle de la classe principale, fonction appelée automatiquement après le constructeur de la classe
 	{
-		while (true)
+		while (true)								//Boucle infinie sinon le thread se termine
 		{
 			try
 			{
@@ -344,16 +346,17 @@ class CalculeRPM implements Runnable
 				
 				end = Instant.now();
 				
-				duree = Duration.between(start, end);
+				duree = Duration.between(start, end);		//La durée entre deux fronts montants (en millisecondes) est la durée entre start et end
 				MilliSecondes = duree.toMillis();
 				RPM = 60000 / MilliSecondes;																			//Convertit le temps en millisecondes en RPM
 				System.out.println("Tour en: " + String.valueOf(MilliSecondes) + "ms, RPM: " + String.valueOf(RPM));
 				
+				//À CHANGER
 				m_Parent.EnvoyerAuServeur(m_Parent.m_IP, m_Parent.m_Port, String.valueOf("Centrifugeuse/RPM:" + RPM));	//Envoie l'information (RPM) à la fonction qui va l'envoyer au serveur
 				m_Parent.ResetCountdown();																				//Réinitialise le compteur d'inactivité
 			}
 			
-			catch(Exception e)
+			catch (Exception e)
 			{
 				System.out.println(e.toString());
 			}
@@ -362,13 +365,12 @@ class CalculeRPM implements Runnable
 }
 
 //Thread qui permet d'éteindre le Pi Zero après deux minutes d'inactivité (pas de front montants détectés) pour conserver la batterie
-class Shutdown implements Runnable
+class Shutdown implements Runnable					//Runnable puisque la classe contient un thread
 {
-	boolean EnVie;
 	Thread m_Thread;
     private ClientCentrifugeuse m_Parent;			//Référence vers la classe principale (ClientCentrifugeuse)
 	
-	int m_Countdown;
+	int m_Countdown;								//Compte pour la fermeture du Pi, si il atteint 0 le Pi s'éteint
 	
 	public Shutdown(ClientCentrifugeuse Parent)		//Constructeur
 	{
@@ -380,29 +382,27 @@ class Shutdown implements Runnable
 			m_Thread.start();						//Démarre le thread
 			
 			m_Countdown = 120;						//Après deux minutes d'inactivité, le pi s'éteint
-			EnVie = true;
 		}
 		
-		catch(Exception e)
+		catch (Exception e)
 		{
 			System.out.println(e.toString());
 		}
 	}
 	
-	public void ResetCountdown()					//Permet de rénitialiser la valeur du compteur d'inactivité
+	public void ResetCountdown()					//Permet de rénitialiser la valeur du compteur d'inactivité (quand un front montant est détecté)
 	{
 		m_Countdown = 120;
 	}
 	
-	public void run()								//Thread qui roule en parallèle de la classe principale
+	public void run()								//Thread qui roule en parallèle de la classe principale, fonction appelée automatiquement après le constructeur de la classe
 	{
-		while (true)
+		while (true)								//Boucle infinie sinon le thread se termine
 		{
 			try
 			{
-				if (m_Countdown <= 0 && EnVie == true)										//Si aucun front montant n'à été détecté dans les deux dernières minutes
+				if (m_Countdown <= 0)														//Si aucun front montant n'à été détecté dans les deux dernières minutes
 				{
-					EnVie = false;
 					String sCommande = "sudo shutdown now";  								//Commande bash à être exécutée
 					String[] sCmd = {"/bin/bash", "-c", sCommande};                       	//Spécifie que l'interpreteur de commandes est BASH. Le "-c" indique que la commande à exécuter suit
 																							
@@ -418,7 +418,7 @@ class Shutdown implements Runnable
 					}
 				}
 				
-				else																		//Décrémente la valeur du compteur d'inactivité
+				else																		//Décrémente la valeur du compteur d'inactivité à chaque seconde
 				{
 					m_Countdown--;
 					Thread.sleep(1000);
@@ -426,7 +426,7 @@ class Shutdown implements Runnable
 				}
 			}
 			
-			catch(Exception e)
+			catch (Exception e)
 			{
 				System.out.println(e.toString());
 			}
