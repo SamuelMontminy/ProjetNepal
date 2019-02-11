@@ -414,7 +414,7 @@ class CalculeRPM implements Runnable				//Runnable puisque la classe contient un
 				{
 					gpioSetBit("gpio13", "0"); 
 					gpioSetBit("gpio5", "0");
-					gpioSetBit("gpio6", "1") //Vert
+					gpioSetBit("gpio6", "1"); //Vert
 					
 				}
 				//ID (CE) = Centrifugeuse, T,P,H à 0 puisque nous nous en servons pas. C'est une structure de fichier json qui sera ensuite transformée en fichier csv par Hologram
