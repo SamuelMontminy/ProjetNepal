@@ -31,6 +31,18 @@ public class ClientCentrifugeuse
 														//qui lui permet de sortir du mode veille lorsqu'elle devient à un niveau haut
 	public static final String NAME_GPIO = "gpio3";     //Nom du GPIO pour le kernel Raspbian
 	
+	public static final gpioUnexport(5);          		//Déffectation du GPIO #3 (au cas ou ce GPIO est déjè défini par un autre programme)
+	public static final gpioExport(5);            		//Affectation du GPIO #3
+	public static final gpioSetdir(gpio5, out);   			//Place GPIO #3 en sorti
+
+	public static final gpioUnexport(6);          		//Déffectation du GPIO #3 (au cas ou ce GPIO est déjè défini par un autre programme)
+	public static final gpioExport(6);            		//Affectation du GPIO #3
+	public static final gpioSetdir(gpio6, out);   			//Place GPIO #3 en sorti
+
+	public static final gpioUnexport(13);          		//Déffectation du GPIO #3 (au cas ou ce GPIO est déjè défini par un autre programme)
+	public static final gpioExport(13);            		//Affectation du GPIO #3
+	public static final gpioSetdir(gpio13, out);   			//Place GPIO #3 en sorti
+
 	String m_IP;										//Adresse du serveur
 	int m_Port;											//Port de communication avec le serveur
     
