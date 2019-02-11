@@ -31,18 +31,7 @@ public class ClientCentrifugeuse
 														//qui lui permet de sortir du mode veille lorsqu'elle devient à un niveau haut
 	public static final String NAME_GPIO = "gpio3";     //Nom du GPIO pour le kernel Raspbian
 	
-	gpioUnexport(5);          		//Déffectation du GPIO #5 (au cas ou ce GPIO est déjè défini par un autre programme)
-	gpioExport(5);            		//Affectation du GPIO #5
-	gpioSetdir(gpio5, out);   			//Place GPIO #5 en sorti
-
-	gpioUnexport(6);          		//Déffectation du GPIO #6 (au cas ou ce GPIO est déjè défini par un autre programme)
-	gpioExport(6);            		//Affectation du GPIO #6
-	gpioSetdir(gpio6, out);   			//Place GPIO #6 en sorti
-
-	gpioUnexport(13);          		//Déffectation du GPIO #13 (au cas ou ce GPIO est déjè défini par un autre programme)
-	gpioExport(13);            		//Affectation du GPIO #13
-	gpioSetdir(gpio13, out);   			//Place GPIO #13 en sorti
-
+	
 	String m_IP;										//Adresse du serveur
 	int m_Port;											//Port de communication avec le serveur
     
@@ -60,6 +49,19 @@ public class ClientCentrifugeuse
 			gpioUnexport(NUMBER_GPIO);          		//Déffectation du GPIO #3 (au cas ou ce GPIO est déjè défini par un autre programme)
 			gpioExport(NUMBER_GPIO);            		//Affectation du GPIO #3
 			gpioSetdir(NAME_GPIO, GPIO_IN);   			//Place GPIO #3 en entrée
+
+			gpioUnexport(5);          		//Déffectation du GPIO #5 (au cas ou ce GPIO est déjè défini par un autre programme)
+			gpioExport(5);            		//Affectation du GPIO #5
+			gpioSetdir(gpio5, out);   			//Place GPIO #5 en sorti
+
+			gpioUnexport(6);          		//Déffectation du GPIO #6 (au cas ou ce GPIO est déjè défini par un autre programme)
+			gpioExport(6);            		//Affectation du GPIO #6
+			gpioSetdir(gpio6, out);   			//Place GPIO #6 en sorti
+
+			gpioUnexport(13);          		//Déffectation du GPIO #13 (au cas ou ce GPIO est déjè défini par un autre programme)
+			gpioExport(13);            		//Affectation du GPIO #13
+			gpioSetdir(gpio13, out);   			//Place GPIO #13 en sorti
+
 			
 			m_objShutdown = new Shutdown(this);			//Instancie l'objet de la classe Shutdown avec une référence vers la classe principale (ClientCentrifugeuse)
 			m_objCalculeRPM = new CalculeRPM(this);		//Instancie l'objet de la classe CalculeRPM avec une référence vers la classe principale (ClientCentrifugeuse)
