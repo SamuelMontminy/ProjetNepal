@@ -399,7 +399,7 @@ class CalculeRPM implements Runnable				//Runnable puisque la classe contient un
 				if (RPM < 40)
 				{
 					m_Parent.gpioSetBit("gpio13", "0"); 
-					m_ParentgpioSetBit("gpio5", "1"); //Bleu
+					m_Parent.gpioSetBit("gpio5", "1"); //Bleu
 					m_Parent.gpioSetBit("gpio6", "0");
 				}
 
