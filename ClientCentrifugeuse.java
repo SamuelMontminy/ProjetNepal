@@ -31,17 +31,17 @@ public class ClientCentrifugeuse
 														//qui lui permet de sortir du mode veille lorsqu'elle devient à un niveau haut
 	public static final String NAME_GPIO = "gpio3";     //Nom du GPIO pour le kernel Raspbian
 	
-	public static final gpioUnexport(5);          		//Déffectation du GPIO #3 (au cas ou ce GPIO est déjè défini par un autre programme)
-	public static final gpioExport(5);            		//Affectation du GPIO #3
-	public static final gpioSetdir(gpio5, out);   			//Place GPIO #3 en sorti
+	gpioUnexport(5);          		//Déffectation du GPIO #5 (au cas ou ce GPIO est déjè défini par un autre programme)
+	gpioExport(5);            		//Affectation du GPIO #5
+	gpioSetdir(gpio5, out);   			//Place GPIO #5 en sorti
 
-	public static final gpioUnexport(6);          		//Déffectation du GPIO #3 (au cas ou ce GPIO est déjè défini par un autre programme)
-	public static final gpioExport(6);            		//Affectation du GPIO #3
-	public static final gpioSetdir(gpio6, out);   			//Place GPIO #3 en sorti
+	gpioUnexport(6);          		//Déffectation du GPIO #6 (au cas ou ce GPIO est déjè défini par un autre programme)
+	gpioExport(6);            		//Affectation du GPIO #6
+	gpioSetdir(gpio6, out);   			//Place GPIO #6 en sorti
 
-	public static final gpioUnexport(13);          		//Déffectation du GPIO #3 (au cas ou ce GPIO est déjè défini par un autre programme)
-	public static final gpioExport(13);            		//Affectation du GPIO #3
-	public static final gpioSetdir(gpio13, out);   			//Place GPIO #3 en sorti
+	gpioUnexport(13);          		//Déffectation du GPIO #13 (au cas ou ce GPIO est déjè défini par un autre programme)
+	gpioExport(13);            		//Affectation du GPIO #13
+	gpioSetdir(gpio13, out);   			//Place GPIO #13 en sorti
 
 	String m_IP;										//Adresse du serveur
 	int m_Port;											//Port de communication avec le serveur
@@ -393,6 +393,28 @@ class CalculeRPM implements Runnable				//Runnable puisque la classe contient un
 				RPM = 60000 / MilliSecondes;																			//Convertit le temps en millisecondes en RPM
 				System.out.println("Tour en: " + String.valueOf(MilliSecondes) + "ms, RPM: " + String.valueOf(RPM));
 				
+
+				if (RPM < 40)
+				{
+					gpioSetBit(gpio13, 0); 
+					gpioSetBit(gpio5, 1); //Bleu
+					gpioSetBit(gpio6, 0);
+				}
+
+				else if(RPM > 50)
+				{
+					gpioSetBit(gpio13, 1); //Rouge
+					gpioSetBit(gpio5, 0);
+					gpioSetBit(gpio6, 0);
+				}
+
+				else
+				{
+					gpioSetBit(gpio13, 0); 
+					gpioSetBit(gpio5, 0);
+					gpioSetBit(gpio6, 1); //Vert
+					
+				}
 				//ID (CE) = Centrifugeuse, T,P,H à 0 puisque nous nous en servons pas. C'est une structure de fichier json qui sera ensuite transformée en fichier csv par Hologram
 				//Cette string sera envoyée au serveur qui l'envoiera ensuite à Hologram, qui lui va l'envoyer à S3 puis à QuickSight en fichier csv
 				m_Parent.EnvoyerAuServeur(m_Parent.m_IP, m_Parent.m_Port, String.valueOf("{ \"ID\":\"CE\", \"T\":\"0\", \"P\":\"0\", \"H\":\"0\", \"R\":\"" + RPM + "\" }"));
