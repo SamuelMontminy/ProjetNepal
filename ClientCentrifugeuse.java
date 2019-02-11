@@ -398,23 +398,23 @@ class CalculeRPM implements Runnable				//Runnable puisque la classe contient un
 
 				if (RPM < 40)
 				{
-					gpioSetBit(gpio13, 0); 
-					gpioSetBit(gpio5, 1); //Bleu
-					gpioSetBit(gpio6, 0);
+					gpioSetBit("gpio13", "0"); 
+					gpioSetBit("gpio5", "1"); //Bleu
+					gpioSetBit("gpio6", "0");
 				}
 
 				else if(RPM > 50)
 				{
-					gpioSetBit(gpio13, 1); //Rouge
-					gpioSetBit(gpio5, 0);
-					gpioSetBit(gpio6, 0);
+					gpioSetBit("gpio13", "1"); //Rouge
+					gpioSetBit("gpio5", "0");
+					gpioSetBit("gpio6", "0");
 				}
 
 				else
 				{
-					gpioSetBit(gpio13, 0); 
-					gpioSetBit(gpio5, 0);
-					gpioSetBit(gpio6, 1); //Vert
+					gpioSetBit("gpio13", "0"); 
+					gpioSetBit("gpio5", "0");
+					gpioSetBit("gpio6", "1") //Vert
 					
 				}
 				//ID (CE) = Centrifugeuse, T,P,H à 0 puisque nous nous en servons pas. C'est une structure de fichier json qui sera ensuite transformée en fichier csv par Hologram
