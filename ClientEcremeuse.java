@@ -307,39 +307,39 @@ public class ClientEcremeuse
 			System.out.println("Error on direction setup :");
 			System.out.println(e.toString());
 	    }
-
-		//Change l'état du GPIO
-		//name_gpio : nom associé au répertoire créé par le kernel (gpio +  no i/o du port : Ex: GPIO 2 ==> pgio2)
-		//value : état à placer sur la ligne
-		//Fonction faite par Pierre Bergeron (Modifiée par Samuel Montminy)
-		public Integer gpioSetBit(String name_gpio, String value)   
-		{       
-			try
-			{
-				FileOutputStream fos = new FileOutputStream("/sys/class/gpio/" + name_gpio + "/value");             //Sélection de la destination du flux de
-																												//données (sélection du fichier de sortie)
-																												
-				DataOutputStream dos = new DataOutputStream(fos);                                               //Canal vers le fichier (sortie en "streaming")
-				dos.write(value.getBytes(), 0, 1);                                                              //Écriture dans le fichier
-																												//(changera l'état du GPIO: 0 ==> niveau bas et différent de 0 niveau haut)
-																												
-				System.out.println("/sys/class/gpio/" + name_gpio + "/value = " + value);                        //Affiche l'action réalisée dans la console Java
-				dos.close();                                                                                    //Fermeture du canal
-				fos.close();                                                                                    //Fermeture du flux de données
-			}
-			
-			catch(Exception e)																					//Affiche l'erreur survenue en Java
-			{
-				value = "-1";
-				System.out.println("Error on gpio setbits" + name_gpio + " :");
-				System.out.println(e.toString());
-			}
-			
-			return new Integer(value);  																		//Retourne l'état "supposé" de la sortie
-		}
 		
 		return bError;
     }  
+
+	//Change l'état du GPIO
+	//name_gpio : nom associé au répertoire créé par le kernel (gpio +  no i/o du port : Ex: GPIO 2 ==> pgio2)
+	//value : état à placer sur la ligne
+	//Fonction faite par Pierre Bergeron (Modifiée par Samuel Montminy)
+	public Integer gpioSetBit(String name_gpio, String value)   
+	{       
+		try
+		{
+			FileOutputStream fos = new FileOutputStream("/sys/class/gpio/" + name_gpio + "/value");             //Sélection de la destination du flux de
+																											//données (sélection du fichier de sortie)
+																											
+			DataOutputStream dos = new DataOutputStream(fos);                                               //Canal vers le fichier (sortie en "streaming")
+			dos.write(value.getBytes(), 0, 1);                                                              //Écriture dans le fichier
+																											//(changera l'état du GPIO: 0 ==> niveau bas et différent de 0 niveau haut)
+																											
+			System.out.println("/sys/class/gpio/" + name_gpio + "/value = " + value);                        //Affiche l'action réalisée dans la console Java
+			dos.close();                                                                                    //Fermeture du canal
+			fos.close();                                                                                    //Fermeture du flux de données
+		}
+		
+		catch(Exception e)																					//Affiche l'erreur survenue en Java
+		{
+			value = "-1";
+			System.out.println("Error on gpio setbits" + name_gpio + " :");
+			System.out.println(e.toString());
+		}
+		
+		return new Integer(value);  																		//Retourne l'état "supposé" de la sortie
+	}
 }
 
 //Thread qui permet de calculer la vitesse de rotation en utilisant le temps entre chaque front montant
