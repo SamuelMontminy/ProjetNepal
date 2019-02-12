@@ -56,6 +56,18 @@ public class ClientEcremeuse
 			gpioExport(NUMBER_GPIO);            				//Affectation du GPIO #3
 			gpioSetdir(NAME_GPIO, GPIO_IN);   					//Place GPIO #3 en entrée
 			
+			gpioUnexport("5");          		//Déffectation du GPIO #5 (au cas ou ce GPIO est déjè défini par un autre programme)
+			gpioExport("5");            		//Affectation du GPIO #5
+			gpioSetdir("gpio5", "out");   			//Place GPIO #5 en sorti
+
+			gpioUnexport("6");          		//Déffectation du GPIO #6 (au cas ou ce GPIO est déjè défini par un autre programme)
+			gpioExport("6");            		//Affectation du GPIO #6
+			gpioSetdir("gpio6", "out");   			//Place GPIO #6 en sorti
+
+			gpioUnexport("13");          		//Déffectation du GPIO #13 (au cas ou ce GPIO est déjè défini par un autre programme)
+			gpioExport("13");            		//Affectation du GPIO #13
+			gpioSetdir("gpio13", "out");   			//Place GPIO #13 en sorti
+
 			m_objShutdown = new Shutdown(this);					//Instancie l'objet de la classe Shutdown avec une référence vers la classe principale (ClientEcremeuse)
 			m_objCalculeRPM = new CalculeRPM(this);				//Instancie l'objet de la classe CalculeRPM avec une référence vers la classe principale (ClientEcremeuse)
 			m_objLectureCapteur = new LectureCapteur(this);		//Instancie l'objet de la classe LectureCapteur avec une référence vers la classe principale (ClientEcremeuse)
@@ -359,6 +371,27 @@ class CalculeRPM implements Runnable				//Runnable puisque la classe contient un
 				RPM = 60000 / MilliSecondes;																		//Convertit le temps en millisecondes en RPM
 				System.out.println("Tour en: " + String.valueOf(MilliSecondes) + "ms, RPM: " + String.valueOf(RPM));
 				
+				if (RPM < 40)
+				{
+					m_Parent.gpioSetBit("gpio13", "0"); 
+					m_Parent.gpioSetBit("gpio5", "1"); //Bleu
+					m_Parent.gpioSetBit("gpio6", "0");
+				}
+
+				else if(RPM > 50)
+				{
+					m_Parent.gpioSetBit("gpio13", "1"); //Rouge
+					m_Parent.gpioSetBit("gpio5", "0");
+					m_Parent.gpioSetBit("gpio6", "0");
+				}
+
+				else
+				{
+					m_Parent.gpioSetBit("gpio13", "0"); 
+					m_Parent.gpioSetBit("gpio5", "0");
+					m_Parent.gpioSetBit("gpio6", "1"); //Vert
+				}
+
 				//ID (EC) = Écrémeuse, T,P,H à 0 puisque nous nous en servons pas. C'est une structure de fichier json qui sera ensuite transformée en fichier csv par Hologram
 				//Cette string sera envoyée au serveur qui l'envoiera ensuite à Hologram, qui lui va l'envoyer à S3 puis à QuickSight en fichier csv
 				m_Parent.EnvoyerAuServeur(m_Parent.m_IP, m_Parent.m_Port, String.valueOf("{ \"ID\":\"EC\", \"T\":\"0\", \"P\":\"0\", \"H\":\"0\", \"R\":\"" + RPM + "\" }"));
