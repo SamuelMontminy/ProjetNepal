@@ -8,8 +8,9 @@ Pour les Pi ayant les codes Entrepot et Écrémeuse, il est nécéssaire d'insta
 De plus, il est important de s'assurer que le I2C est bien activé pour les Pi qui en ont de besoin (Entrepot et Écrémeuse). Suivre la procédure suivante pour l'activer: https://learn.adafruit.com/adafruits-raspberry-pi-lesson-4-gpio-setup/configuring-i2c
 Pour le serveur, il est nécéssaire d'installer le SDK Hologram (pour que le modem LTE fonctionne). Suivre la procédure suivante: https://www.hackster.io/hologram/add-cellular-to-a-raspberry-pi-with-hologram-nova-ea5926
 Pour pouvoir recevoir les données de la carte SIM, celle-ci doit être enregistrée dans le "dashboard" Hologram: https://dashboard.hologram.io
-Pour recevoir les données dans AWS S3, une route doit être fait dans Hologram pour rediriger les données vers S3 (Tutoriel à venir)
-Pour voir les données dans QuickSight, il faut des fichiers "manifests" qui dictent quelles données importer à partir de S3 (Tutoriel à venir)
+Pour recevoir les données dans AWS S3, une route doit être fait dans Hologram pour rediriger les données vers S3 (Voir le tutoriel dans la section "Docs & Files" sur notre projet dans BaseCamp)
+Pour voir les données dans QuickSight, il faut des fichiers "manifests" qui dictent quelles données importer à partir de S3 (Voir le tutoriel dans la section "Docs & Files" sur notre projet dans BaseCamp)
+Tout le code fonctionnel qui est necéssaire pour le projet ce trouve dans la branche "master". Le code qui se retrouve dans les autre branches est dépassé et ne devrait plus être utilisé.
 
 Serveur:
 	Compiler:
