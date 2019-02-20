@@ -424,7 +424,7 @@ class CalculeRPM implements Runnable				//Runnable puisque la classe contient un
 
 				//ID (EC) = Écrémeuse, T,P,H à 0 puisque nous nous en servons pas. C'est une structure de fichier json qui sera ensuite transformée en fichier csv par Hologram
 				//Cette string sera envoyée au serveur qui l'envoiera ensuite à Hologram, qui lui va l'envoyer à S3 puis à QuickSight en fichier csv
-				m_Parent.EnvoyerAuServeur(m_Parent.m_IP, m_Parent.m_Port, String.valueOf("{ \"ID\":\"EC\", \"T\":\"0\", \"P\":\"0\", \"H\":\"0\", \"R\":\"" + RPM + "\" }"));
+				m_Parent.EnvoyerAuServeur(m_Parent.m_IP, m_Parent.m_Port, String.valueOf("\"{ \\\"ID\\\":\\\"EC\\\", \\\"T\\\":\\\"0\\\", \\\"P\\\":\\\"0\\\", \\\"H\\\":\\\"0\\\", \\\"R\\\":\\\"" + RPM + "\\\" }\""));
 				m_Parent.ResetCountdown();																			//Réinitialise le compteur d'inactivité
 			}
 			
@@ -492,7 +492,7 @@ class Shutdown implements Runnable					//Runnable puisque la classe contient un 
 				
 				else																		//Décrémente la valeur du compteur d'inactivité à chaque seconde
 				{
-					m_Countdown--;
+					//m_Countdown--;														//POUR PAS QUE LE PI SE FERME AUTO POUR LE TEST LONGUE DURÉE
 					Thread.sleep(1000);
 					System.out.println("Countdown: " + String.valueOf(m_Countdown));
 				}
@@ -559,8 +559,8 @@ class LectureCapteur implements Runnable			//Runnable puisque la classe contient
 				
 				//ID (EC) = Écrémeuse, R,P,H à 0 puisque nous nous en servons pas. C'est une structure de fichier json qui sera ensuite transformée en fichier csv par Hologram
 				//Cette string sera envoyée au serveur qui l'envoiera ensuite à Hologram, qui lui va l'envoyer à S3 puis à QuickSight en fichier csv
-				m_Parent.EnvoyerAuServeur(m_Parent.m_IP, m_Parent.m_Port, String.valueOf("{ \"ID\":\"EC\", \"T\":\"" + Temperature + "\", \"P\":\"0\", \"H\":\"0\", \"R\":\"0\" }"));	
-				Thread.sleep(25000);
+				m_Parent.EnvoyerAuServeur(m_Parent.m_IP, m_Parent.m_Port, String.valueOf("\"{ \\\"ID\\\":\\\"EC\\\", \\\"T\\\":\\\"" + Temperature + "\\\", \\\"P\\\":\\\"0\\\", \\\"H\\\":\\\"0\\\", \\\"R\\\":\\\"0\\\" }\""));	
+				Thread.sleep(300000);
 			}
 			
 			catch (Exception e)

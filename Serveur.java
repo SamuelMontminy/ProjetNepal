@@ -82,7 +82,7 @@ public class Serveur implements Runnable
 			{
 				System.out.println(Informations + " -> à été reçu d'un client");
 				
-				/* 		//Mettre en commentaire le bloc pour ne pas envoyer à Hologram      <- DÉBUT DU BLOC
+				//Mettre en commentaire le bloc pour ne pas envoyer à Hologram      <- DÉBUT DU BLOC
 				System.out.println(Informations + " -> sera envoyé à Hologram");
 				String s = "sudo hologram send " + Informations;    			//Commande bash a etre executee
 				String[] sCmd = {"/bin/bash", "-c", s};             			//Specifie que l'interpreteur de commandes est BASH. Le "-c" indique que la commande a executer suit
@@ -100,7 +100,7 @@ public class Serveur implements Runnable
 
 				Thread.sleep(100);      										//Delai pour laisser le temps au kernel d'agir
 				System.out.println(Informations + " -> à été envoyé à Hologram");
-				*/                                                                        //<- FIN DU BLOC
+				//<- FIN DU BLOC
 			}
 
 			catch (Exception e)
