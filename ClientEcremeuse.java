@@ -424,11 +424,16 @@ class CalculeRPM implements Runnable				//Runnable puisque la classe contient un
 					m_Parent.gpioSetBit("gpio6", "1"); //Vert
 				}
 
-				if (RPM > 2)										//Si l'usager arrête de tourner pendant plus de 20 secondes, on ne tiens pas compte de la donnée
+				if (RPM > 2)										//Si l'usager tourne à plus de un tour au 20 secondes, on envoie la donnée réelle.
 				{
 					//ID (EC) = Écrémeuse, T,P,H à 0 puisque nous nous en servons pas. C'est une structure de fichier json qui sera ensuite transformée en fichier csv par Hologram
 					//Cette string sera envoyée au serveur qui l'envoiera ensuite à Hologram, qui lui va l'envoyer à S3 puis à QuickSight en fichier csv
 					m_Parent.EnvoyerAuServeur(m_Parent.m_IP, m_Parent.m_Port, String.valueOf("\"{ \\\"ID\\\":\\\"EC\\\", \\\"T\\\":\\\"0\\\", \\\"P\\\":\\\"0\\\", \\\"H\\\":\\\"0\\\", \\\"R\\\":\\\"" + RPM + "\\\" }\""));
+				}
+
+				else												//Si l'usager tourne à moins qu'un tour au 20 secondes, on envoie 0 RPM (il est en train d'arrêter de tourner)
+				{
+					m_Parent.EnvoyerAuServeur(m_Parent.m_IP, m_Parent.m_Port, String.valueOf("\"{ \\\"ID\\\":\\\"EC\\\", \\\"T\\\":\\\"0\\\", \\\"P\\\":\\\"0\\\", \\\"H\\\":\\\"0\\\", \\\"R\\\":\\\"0\\\" }\""));
 				}
 
 				m_Parent.ResetCountdown();																			//Réinitialise le compteur d'inactivité

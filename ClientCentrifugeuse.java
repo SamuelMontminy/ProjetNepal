@@ -428,6 +428,11 @@ class CalculeRPM implements Runnable				//Runnable puisque la classe contient un
 					m_Parent.EnvoyerAuServeur(m_Parent.m_IP, m_Parent.m_Port, String.valueOf("\"{ \\\"ID\\\":\\\"CE\\\", \\\"T\\\":\\\"0\\\", \\\"P\\\":\\\"0\\\", \\\"H\\\":\\\"0\\\", \\\"R\\\":\\\"" + RPM + "\\\" }\""));
 				}
 
+				else			//Si l'usager tourne à moins qu'un tour au 20 secondes, on envoie 0 RPM (il est en train d'arrêter de tourner)
+				{
+					m_Parent.EnvoyerAuServeur(m_Parent.m_IP, m_Parent.m_Port, String.valueOf("\"{ \\\"ID\\\":\\\"CE\\\", \\\"T\\\":\\\"0\\\", \\\"P\\\":\\\"0\\\", \\\"H\\\":\\\"0\\\", \\\"R\\\":\\\"0\\\" }\""));
+				}
+
 				m_Parent.ResetCountdown();																				//Réinitialise le compteur d'inactivité
 			}
 			
