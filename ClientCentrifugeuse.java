@@ -390,9 +390,12 @@ class CalculeRPM implements Runnable				//Runnable puisque la classe contient un
 				
 				end = Instant.now();
 				
+				Thread.sleep(15); 
+				
 				duree = Duration.between(start, end);		//La durée entre deux fronts montants (en millisecondes) est la durée entre start et end
 				MilliSecondes = duree.toMillis();
 				RPM = 60000 / MilliSecondes;																			//Convertit le temps en millisecondes en RPM
+
 				System.out.println("Tour en: " + String.valueOf(MilliSecondes) + "ms, RPM: " + String.valueOf(RPM));
 				
 
@@ -417,9 +420,14 @@ class CalculeRPM implements Runnable				//Runnable puisque la classe contient un
 					m_Parent.gpioSetBit("gpio6", "1"); //Vert
 					
 				}
-				//ID (CE) = Centrifugeuse, T,P,H à 0 puisque nous nous en servons pas. C'est une structure de fichier json qui sera ensuite transformée en fichier csv par Hologram
-				//Cette string sera envoyée au serveur qui l'envoiera ensuite à Hologram, qui lui va l'envoyer à S3 puis à QuickSight en fichier csv
-				m_Parent.EnvoyerAuServeur(m_Parent.m_IP, m_Parent.m_Port, String.valueOf("\"{ \\\"ID\\\":\\\"CE\\\", \\\"T\\\":\\\"0\\\", \\\"P\\\":\\\"0\\\", \\\"H\\\":\\\"0\\\", \\\"R\\\":\\\"" + RPM + "\\\" }\""));
+
+				if (RPM > 2)	//Si l'usager arrête de tourner pendant plus de 20 secondes, on ne tiens pas compte de la donnée
+				{
+					//ID (CE) = Centrifugeuse, T,P,H à 0 puisque nous nous en servons pas. C'est une structure de fichier json qui sera ensuite transformée en fichier csv par Hologram
+					//Cette string sera envoyée au serveur qui l'envoiera ensuite à Hologram, qui lui va l'envoyer à S3 puis à QuickSight en fichier csv
+					m_Parent.EnvoyerAuServeur(m_Parent.m_IP, m_Parent.m_Port, String.valueOf("\"{ \\\"ID\\\":\\\"CE\\\", \\\"T\\\":\\\"0\\\", \\\"P\\\":\\\"0\\\", \\\"H\\\":\\\"0\\\", \\\"R\\\":\\\"" + RPM + "\\\" }\""));
+				}
+
 				m_Parent.ResetCountdown();																				//Réinitialise le compteur d'inactivité
 			}
 			
@@ -468,9 +476,10 @@ class Shutdown implements Runnable					//Runnable puisque la classe contient un 
 		{
 			try
 			{
-				if (m_Countdown <= 0)														//Si aucun front montant n'à été détecté dans les deux dernières minutes
+				if (m_Countdown == 0)														//Si aucun front montant n'à été détecté dans les deux dernières minutes
 				{
-					String sCommande = "sudo shutdown now";  								//Commande bash à être exécutée
+					m_Countdown--;															//Pour pas que la commande soit éxécutée plusieurs fois
+					String sCommande = "shutdown now";  									//Commande bash à être exécutée
 					String[] sCmd = {"/bin/bash", "-c", sCommande};                       	//Spécifie que l'interpreteur de commandes est BASH. Le "-c" indique que la commande à exécuter suit
 																							
 					System.out.println(sCmd[0] + " " + sCmd[1] + " " + sCmd[2]);            //Affiche la commande à exécuter dans la console Java
