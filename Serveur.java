@@ -1,7 +1,7 @@
 /**
  * @file   Serveur.java
- * @author Samuel Montminy
- * @date   Janvier 2019
+ * @author Samuel Montminy & Harri Laliberté
+ * @date   Février 2019
  * @brief  Code qui permet de recevoir des données envoyées par le client tcp/ip pour ensuite les envoyer sur le dashboard Hologram par LTE
  *         Le code doit être compilé avec /javac Serveur.java et doit être lancé avec /java Serveur
  *

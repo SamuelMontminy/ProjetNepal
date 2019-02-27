@@ -1,7 +1,7 @@
 /**
  * @file   ClientEcremeuse.java
- * @author Samuel Montminy (Fonctions de IO faites par Pierre Bergeron)
- * @date   Janvier 2019
+ * @author Samuel Montminy & Harri Laliberté (Fonctions de IO faites par Pierre Bergeron)
+ * @date   Février 2019
  * @brief  Code qui permet de déterminer la vitesse de rotation de l'écrémeuse en détectant les fronts montants sur un gpio.
  *         Le temps entre chaque front montant est ensuite converti en RPM puis est envoyé au serveur par socket tcp/ip.
  *		   Ce code incorpore aussi un thread qui permet de lire une sonde DS18B20 par protocole OneWire pour avoir la température du lait dans l'écrémeuse.

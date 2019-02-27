@@ -1,7 +1,7 @@
 /**
  * @file   ClientEntrepot.java
- * @author Samuel Montminy
- * @date   Janvier 2019
+ * @author Samuel Montminy & Harri Laliberté
+ * @date   Février 2019
  * @brief  Code qui permet de lire le capteur BME280 par I2C et puis et envoyer les données au serveur par socket tcp/ip
  *		   Le code doit être compilé avec /pi4j -c ClientEntrepot.java et doit être lancé avec /pi4j -r ClientEntrepot 192.168.4.1 (Adresse IP du serveur) 2228 (Port de communication avec le serveur)
  *

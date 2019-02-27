@@ -1,7 +1,7 @@
 /**
  * @file   ClientCentrifugeuse.java
- * @author Samuel Montminy (Fonctions de IO faites par Pierre Bergeron)
- * @date   Janvier 2019
+ * @author Samuel Montminy & Harri Laliberté (Fonctions de IO faites par Pierre Bergeron)
+ * @date   Février 2019
  * @brief  Code qui permet de déterminer la vitesse de rotation de la centrifugeuse en détectant les fronts montants sur un gpio.
  *         Le temps entre chaque front montant est ensuite converti en RPM puis est envoyé au serveur par socket tcp/ip.
  *		   De plus, il y a un thread qui permet d'éteindre le Pi pour économiser de l'énergie lorsque aucun front montant n'est détecté pendant un certain nombre de temps.
