@@ -421,7 +421,7 @@ class CalculeRPM implements Runnable				//Runnable puisque la classe contient un
 					
 				}
 
-				if (RPM > 2)	//Si l'usager arrête de tourner pendant plus de 20 secondes, on ne tiens pas compte de la donnée
+				if (RPM > 3)	//Si l'usager arrête de tourner pendant plus de 20 secondes, on ne tiens pas compte de la donnée
 				{
 					//ID (CE) = Centrifugeuse, T,P,H à 0 puisque nous nous en servons pas. C'est une structure de fichier json qui sera ensuite transformée en fichier csv par Hologram
 					//Cette string sera envoyée au serveur qui l'envoiera ensuite à Hologram, qui lui va l'envoyer à S3 puis à QuickSight en fichier csv

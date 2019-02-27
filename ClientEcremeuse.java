@@ -424,7 +424,7 @@ class CalculeRPM implements Runnable				//Runnable puisque la classe contient un
 					m_Parent.gpioSetBit("gpio6", "1"); //Vert
 				}
 
-				if (RPM > 2)										//Si l'usager tourne à plus de un tour au 20 secondes, on envoie la donnée réelle.
+				if (RPM > 3)										//Si l'usager tourne à plus de un tour au 20 secondes, on envoie la donnée réelle.
 				{
 					//ID (EC) = Écrémeuse, T,P,H à 0 puisque nous nous en servons pas. C'est une structure de fichier json qui sera ensuite transformée en fichier csv par Hologram
 					//Cette string sera envoyée au serveur qui l'envoiera ensuite à Hologram, qui lui va l'envoyer à S3 puis à QuickSight en fichier csv
