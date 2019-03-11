@@ -1,19 +1,18 @@
-/*
-  Adapted from ArduinoMqttClient - WiFi Simple Receive Callback
-  This example connects to a MQTT broker and subscribes to a single topic.
-  When a message is received it prints the message to the serial monitor,
-  it uses the callback functionality of the library.
-  This example also publishes a sensor value to a separate topic
-  The circuit:
-  - Arduino MKR 1000, MKR 1010 or Uno WiFi Rev.2 board
-  This example code is in the public domain.
-*/
+/**
+ * @file   MQTT.ino
+ * @author Branche originale: Arduino, modifiée par: Daz, Samuel Montminy & Harri Laliberté
+ * @date   Mars 2019
+ * @brief  Ce code permet d'envoyer des données sur AWS IoT à partir du module Arduino MKR GSM 1400
+ * @version 1.0 : Première version
+ * Environnement de développement: Notepad++
+ * Compilateur: Arduino
+ * Matériel: Raspberry Pi 3b, Arduino MKR GSM 1400
+ */
 
-#include <ArduinoMqttClient.h>
 #include <MKRGSM.h>
-
+#include <PubSubClient.h>
 #include "arduino_secrets.h" 
-// Please enter your sensitive data in the Secret tab or arduino_secrets.h
+
 // PIN Number
 const char PINNUMBER[]     = SECRET_PINNUMBER;
 // APN data
@@ -21,21 +20,18 @@ const char GPRS_APN[]      = SECRET_GPRS_APN;
 const char GPRS_LOGIN[]    = SECRET_GPRS_LOGIN;
 const char GPRS_PASSWORD[] = SECRET_GPRS_PASSWORD;
 
-// To connect with SSL/TLS:
-// 1) Change GSMClient to GSMSSLClient.
-// 2) Change port value from 1883 to 8883.
-// 3) Change broker value to a server with a known SSL/TLS root certificate 
-//    flashed in the WiFi module.
+const char server[] = "a2f4d7lmuqybqc-ats.iot.us-east-1.amazonaws.com";
+const char topic[] = "hologram-projetnepal/to";
+const char publishTopic[] = "hologram-projetnepal/from";
+const char clientId[] = "Arduino_MKR_GSM_1400";
 
 GPRS gprs;
 GSM gsmAccess;
 GSMClient gsmClient;
-MqttClient mqttClient(gsmClient);
+GSMSecurity profile;
 
-const char broker[] = "iot.eclipse.org";
-int        port     = 1883;
-const char topic[]  = "hologram-projetnepal/to";
-const char publishTopic[]  = "hologram-projetnepal/from";
+MqttClient mqttClient(gsmClient);
+PubSubClient mqttClient(server, 8883, gsmClient);
 
 void setup() 
 {
@@ -68,80 +64,48 @@ void setup()
   }
 
   Serial.println("You're connected to the network");
-  Serial.println();
-
+  Serial.println("Importing certificates...");
+  
+  profile.setRootCertificate(SECRET_ROOT_CERT);
+  profile.setClientCertificate(SECRET_CLIENT_CERT);
+  profile.setPrivateKey(SECRET_PRIVATE_KEY);
+  profile.setValidation(SSL_VALIDATION_ROOT_CERT);
+  profile.setVersion(SSL_VERSION_TLS_1_2);
+  profile.setCipher(SSL_CIPHER_AUTO);
+  gsmClient.setSecurityProfile(profile);
+  
+  Serial.println("Connecting...");
+  
   //You can provide a unique client ID, if not set the library uses Arduino-millis()
   //Each client must have a unique client ID
   //mqttClient.setId("clientId");
-
-  //You can provide a username and password for authentication
-  //mqttClient.setUsernamePassword("username", "password");
-
-  Serial.print("Attempting to connect to the MQTT broker: ");
-  Serial.println(broker);
-
-  if (!mqttClient.connect(broker, port)) 
+  while (!mqttClient.connect(clientId)) 
   {
-    Serial.print("MQTT connection failed! Error code = ");
-    Serial.println(mqttClient.connectError());
-
-    while (1);
+	Serial.print(".");
+	delay(500);
   }
-
-  Serial.println("You're connected to the MQTT broker!");
-  Serial.println();
-
-  //set the message receive callback
-  mqttClient.onMessage(onMqttMessage);
-
-  Serial.print("Subscribing to topic: ");
-  Serial.println(topic);
-  Serial.println();
-
-  //subscribe to a topic
-  mqttClient.subscribe(topic);
-
-  //topics can be unsubscribed using:
-  //mqttClient.unsubscribe(topic);
-
-  Serial.print("Waiting for messages on topic: ");
-  Serial.println(topic);
-  Serial.println();
 }
+
+unsigned long prevNow = millis();
 
 void loop() 
 {
-  //call poll() regularly to allow the library to receive MQTT messages and
-  //send MQTT keep alives which avoids being disconnected by the broker
-  mqttClient.poll();
-
-  //Set the rate at which we send our values
-  delay(5000);
+  unsigned long now = millis();
   
-  //read the first Analog pin
-  int sensorVal = analogRead(0);
-  
-  //Publish our sensor value
-  mqttClient.beginMessage(publishTopic);
-  mqttClient.print(sensorVal);
-  mqttClient.endMessage();
-}
-
-void onMqttMessage(int messageSize) 
-{
-  //we received a message, print out the topic and contents
-  Serial.println("Received a message with topic '");
-  Serial.print(mqttClient.messageTopic());
-  Serial.print("', length ");
-  Serial.print(messageSize);
-  Serial.println(" bytes:");
-
-  //use the Stream interface to print the contents
-  while (mqttClient.available()) 
+  if (now - prevNow >= 30000) 
   {
-    Serial.print((char)mqttClient.read());
+    prevNow = now;
+	
+    if (mqttClient.publish(topic, "{d: { status: \"connected!\"}")) 
+	{
+      Serial.println("Publish ok");
+    } 
+	
+	else 
+	{
+      Serial.println("Publish failed");
+    }
   }
-  
-  Serial.println();
-  Serial.println();
+
+  mqttClient.loop();
 }
