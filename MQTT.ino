@@ -11,6 +11,7 @@
 
 #include <MKRGSM.h>
 #include <PubSubClient.h>
+#include <ArduinoMqttClient.h>
 #include "arduino_secrets.h" 
 
 // PIN Number
@@ -21,16 +22,14 @@ const char GPRS_LOGIN[]    = SECRET_GPRS_LOGIN;
 const char GPRS_PASSWORD[] = SECRET_GPRS_PASSWORD;
 
 const char server[] = "a2f4d7lmuqybqc-ats.iot.us-east-1.amazonaws.com";
-const char topic[] = "hologram-projetnepal/to";
-const char publishTopic[] = "hologram-projetnepal/from";
+const char topic[] = "$aws/things/Arduino_MKR_GSM_1400";
 const char clientId[] = "Arduino_MKR_GSM_1400";
 
-GPRS gprs;
-GSM gsmAccess;
 GSMClient gsmClient;
 GSMSecurity profile;
+GPRS gprs;
+GSM gsmAccess;
 
-MqttClient mqttClient(gsmClient);
 PubSubClient mqttClient(server, 8883, gsmClient);
 
 void setup() 
@@ -43,7 +42,7 @@ void setup()
   }
 
   //attempt to connect to GSM and GPRS:
-  Serial.print("Attempting to connect to GSM and GPRS");
+  Serial.println("Attempting to connect to GSM and GPRS");
   //connection state
   bool connected = false;
 
@@ -84,6 +83,9 @@ void setup()
 	Serial.print(".");
 	delay(500);
   }
+  
+  Serial.println("");
+  Serial.println("Authentifié!");
 }
 
 unsigned long prevNow = millis();
