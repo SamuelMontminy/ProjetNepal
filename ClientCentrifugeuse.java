@@ -26,12 +26,6 @@ public class ClientCentrifugeuse
 	public Shutdown m_objShutdown;						//Objet pour la classe qui éteint le Pi après un délai d'inactivité
 	public CalculeRPM m_objCalculeRPM;					//Objet pour la classe qui calcule le RPM avec la reed switch branchée sur GPIO 3 et GND
 	
-	public static final String GPIO_IN = "in";        	//Pour configurer la direction de la broche GPIO   
-	public static final String NUMBER_GPIO = "3";   	//ID du GPIO de le Raspberry Pi avec le capteur Reed switch, gpio 3 parce que c'est la pin reset du pi
-														//qui lui permet de sortir du mode veille lorsqu'elle devient à un niveau haut
-	public static final String NAME_GPIO = "gpio3";     //Nom du GPIO pour le kernel Raspbian
-	
-	
 	String m_IP;										//Adresse du serveur
 	int m_Port;											//Port de communication avec le serveur
     
@@ -46,21 +40,21 @@ public class ClientCentrifugeuse
 		
 		try
 		{
-			gpioUnexport(NUMBER_GPIO);          		//Déffectation du GPIO #3 (au cas ou ce GPIO est déjè défini par un autre programme)
-			gpioExport(NUMBER_GPIO);            		//Affectation du GPIO #3
-			gpioSetdir(NAME_GPIO, GPIO_IN);   			//Place GPIO #3 en entrée
+			gpioUnexport("3");          				//Déffectation du GPIO #3 (au cas ou ce GPIO est déjè défini par un autre programme)
+			gpioExport("3");            				//Affectation du GPIO #3
+			gpioSetdir("gpio3", "in");   				//Place GPIO #3 en entrée
 
-			gpioUnexport("5");          		//Déffectation du GPIO #5 (au cas ou ce GPIO est déjè défini par un autre programme)
-			gpioExport("5");            		//Affectation du GPIO #5
-			gpioSetdir("gpio5", "out");   			//Place GPIO #5 en sorti
+			gpioUnexport("5");          				//Déffectation du GPIO #5 (au cas ou ce GPIO est déjè défini par un autre programme)
+			gpioExport("5");            				//Affectation du GPIO #5
+			gpioSetdir("gpio5", "out");   				//Place GPIO #5 en sorti
 
-			gpioUnexport("6");          		//Déffectation du GPIO #6 (au cas ou ce GPIO est déjè défini par un autre programme)
-			gpioExport("6");            		//Affectation du GPIO #6
-			gpioSetdir("gpio6", "out");   			//Place GPIO #6 en sorti
+			gpioUnexport("6");          				//Déffectation du GPIO #6 (au cas ou ce GPIO est déjè défini par un autre programme)
+			gpioExport("6");            				//Affectation du GPIO #6
+			gpioSetdir("gpio6", "out");   				//Place GPIO #6 en sorti
 
-			gpioUnexport("13");          		//Déffectation du GPIO #13 (au cas ou ce GPIO est déjè défini par un autre programme)
-			gpioExport("13");            		//Affectation du GPIO #13
-			gpioSetdir("gpio13", "out");   			//Place GPIO #13 en sorti
+			gpioUnexport("13");          				//Déffectation du GPIO #13 (au cas ou ce GPIO est déjè défini par un autre programme)
+			gpioExport("13");            				//Affectation du GPIO #13
+			gpioSetdir("gpio13", "out");   				//Place GPIO #13 en sorti
 
 			
 			m_objShutdown = new Shutdown(this);			//Instancie l'objet de la classe Shutdown avec une référence vers la classe principale (ClientCentrifugeuse)
@@ -71,7 +65,6 @@ public class ClientCentrifugeuse
 			
 			while (true)								//Rien dans la boucle infinie du main puisque le code de lecture du capteur roule dans un thread appart
 			{
-				
 			}
 		}
 		
@@ -86,9 +79,7 @@ public class ClientCentrifugeuse
 	public void EnvoyerAuServeur(String sIP, int nPort, String Message)
 	{   
         try
-        {
-			System.out.println(Message + " -> à été reçu par la fonction");
-						
+        {		
 			///*		Mettre en commentaire le bloc pour ne pas envoyer au serveur<- DÉBUT DU BLOC
 			System.out.println(Message + " -> sera envoyé au serveur");
             m_sClient = new Socket(sIP, nPort);                                     //Objet Socket pour établir la connexion au miniserveur
@@ -100,7 +91,6 @@ public class ClientCentrifugeuse
             //Fermeture des objets de flux de données
             oosOut.close();
             osOut.close();
-			System.out.println(Message + " -> à été envoyé au serveur");
 			//*/																	//<- FIN DU BLOC
         }
         
@@ -171,7 +161,6 @@ public class ClientCentrifugeuse
             DataInputStream dis = new DataInputStream(fis);                                                 //Canal vers le fichier (entrée en "streaming")
             sLecture = dis.readLine();                                                                      //Lecture du fichier                
                                                                                                             
-            //System.out.println("/sys/class/gpio/" + name_gpio + "/value = " + sLecture);                  //Affiche l'action réalisée dans la console Java
             dis.close();                                                                                    //Fermeture du canal
             fis.close();                                                                                    //Fermeture du flux de données
         }
@@ -313,14 +302,14 @@ public class ClientCentrifugeuse
     {       
         try
         {
-            FileOutputStream fos = new FileOutputStream("/sys/class/gpio/" + name_gpio + "/value");             //Sélection de la destination du flux de
+            FileOutputStream fos = new FileOutputStream("/sys/class/gpio/" + name_gpio + "/value");         //Sélection de la destination du flux de
                                                                                                             //données (sélection du fichier de sortie)
                                                                                                             
             DataOutputStream dos = new DataOutputStream(fos);                                               //Canal vers le fichier (sortie en "streaming")
             dos.write(value.getBytes(), 0, 1);                                                              //Écriture dans le fichier
                                                                                                             //(changera l'état du GPIO: 0 ==> niveau bas et différent de 0 niveau haut)
                                                                                                             
-            System.out.println("/sys/class/gpio/" + name_gpio + "/value = " + value);                        //Affiche l'action réalisée dans la console Java
+            System.out.println("/sys/class/gpio/" + name_gpio + "/value = " + value);                       //Affiche l'action réalisée dans la console Java
             dos.close();                                                                                    //Fermeture du canal
             fos.close();                                                                                    //Fermeture du flux de données
         }
@@ -341,6 +330,7 @@ class CalculeRPM implements Runnable				//Runnable puisque la classe contient un
 {
 	long MilliSecondes;
 	long RPM;
+	int EnvoieRPM = 0;								//Pour ne pas congestionner le LTE, on va seulement envoyer le RPM une fois sur 10
 	
 	Duration duree;
 	Instant start;
@@ -373,19 +363,16 @@ class CalculeRPM implements Runnable				//Runnable puisque la classe contient un
 			{
 				while (m_Parent.gpioReadBit(m_Parent.NAME_GPIO) == 1)
 				{
-					
 				}	//Détecte un front montant
 				
 				start = Instant.now();
 				
 				while (m_Parent.gpioReadBit(m_Parent.NAME_GPIO) == 0)
 				{
-					
 				}	//Front descendant
 				
 				while (m_Parent.gpioReadBit(m_Parent.NAME_GPIO) == 1)
 				{
-					
 				}	//Front montant
 				
 				end = Instant.now();
@@ -397,7 +384,6 @@ class CalculeRPM implements Runnable				//Runnable puisque la classe contient un
 				RPM = 60000 / MilliSecondes;																			//Convertit le temps en millisecondes en RPM
 
 				System.out.println("Tour en: " + String.valueOf(MilliSecondes) + "ms, RPM: " + String.valueOf(RPM));
-				
 
 				if (RPM < 40)
 				{
@@ -421,16 +407,26 @@ class CalculeRPM implements Runnable				//Runnable puisque la classe contient un
 					
 				}
 
-				if (RPM > 3)	//Si l'usager arrête de tourner pendant plus de 20 secondes, on ne tiens pas compte de la donnée
+				if (EnvoieRPM == 10)		//Envoie seulement le RPM une fois sur 10
 				{
-					//ID (CE) = Centrifugeuse, T,P,H à 0 puisque nous nous en servons pas. C'est une structure de fichier json qui sera ensuite transformée en fichier csv par Hologram
-					//Cette string sera envoyée au serveur qui l'envoiera ensuite à Hologram, qui lui va l'envoyer à S3 puis à QuickSight en fichier csv
-					m_Parent.EnvoyerAuServeur(m_Parent.m_IP, m_Parent.m_Port, String.valueOf("\"{ \\\"ID\\\":\\\"CE\\\", \\\"T\\\":\\\"0\\\", \\\"P\\\":\\\"0\\\", \\\"H\\\":\\\"0\\\", \\\"R\\\":\\\"" + RPM + "\\\" }\""));
+					EnvoieRPM = 0;
+
+					if (RPM > 3)			//Si l'usager arrête de tourner pendant plus de 20 secondes, on ne tiens pas compte de la donnée
+					{
+						//ID (CE) = Centrifugeuse, T,P,H à 0 puisque nous nous en servons pas. C'est une structure de fichier json qui sera ensuite transformée en fichier csv par Hologram
+						//Cette string sera envoyée au serveur qui l'envoiera ensuite à Hologram, qui lui va l'envoyer à S3 puis à QuickSight en fichier csv
+						m_Parent.EnvoyerAuServeur(m_Parent.m_IP, m_Parent.m_Port, String.valueOf("\"{ \\\"ID\\\":\\\"CE\\\", \\\"T\\\":\\\"0\\\", \\\"P\\\":\\\"0\\\", \\\"H\\\":\\\"0\\\", \\\"R\\\":\\\"" + RPM + "\\\" }\""));
+					}
+
+					else					//Si l'usager tourne à moins qu'un tour au 20 secondes, on envoie 0 RPM (il est en train d'arrêter de tourner)
+					{
+						m_Parent.EnvoyerAuServeur(m_Parent.m_IP, m_Parent.m_Port, String.valueOf("\"{ \\\"ID\\\":\\\"CE\\\", \\\"T\\\":\\\"0\\\", \\\"P\\\":\\\"0\\\", \\\"H\\\":\\\"0\\\", \\\"R\\\":\\\"0\\\" }\""));
+					}
 				}
 
-				else			//Si l'usager tourne à moins qu'un tour au 20 secondes, on envoie 0 RPM (il est en train d'arrêter de tourner)
+				else
 				{
-					m_Parent.EnvoyerAuServeur(m_Parent.m_IP, m_Parent.m_Port, String.valueOf("\"{ \\\"ID\\\":\\\"CE\\\", \\\"T\\\":\\\"0\\\", \\\"P\\\":\\\"0\\\", \\\"H\\\":\\\"0\\\", \\\"R\\\":\\\"0\\\" }\""));
+					EnvoieRPM++;
 				}
 
 				m_Parent.ResetCountdown();																				//Réinitialise le compteur d'inactivité

@@ -26,14 +26,9 @@ public class ClientEntrepot
     Socket m_sClient;           						//Référence de l'objet Socket
 	
 	public LectureCapteur m_objCapteur;					//Objet pour la classe pour la lecture du capteur
-	public SimuleRPM m_objRPM;							//À ENLEVER DANS LA VERSION FINALE -TEST-
 	
 	String m_IP;										//Adresse du serveur
 	int m_Port;											//Port de communication avec le serveur
-	
-	public static final String GPIO_IN = "in";        	//-TEST-
-	public static final String NUMBER_GPIO = "3";   	//-TEST-
-	public static final String NAME_GPIO = "gpio3";		//-TEST-
     
     public ClientEntrepot()
     {
@@ -47,18 +42,12 @@ public class ClientEntrepot
 		try
 		{	
 			m_objCapteur = new LectureCapteur(this);	//Instancie l'objet de la classe LectureCapteur avec une référence vers la classe principale (ClientEntrepot)
-			m_objRPM = new SimuleRPM(this);				//À ENLEVER DANS LA VERSION FINALE -TEST-
-
+			
 			m_IP = sIP;									//Pour que les variables soient accessibles partout dans la classe
 			m_Port = nPort;
 			
-			gpioUnexport("12");          			//-TEST-
-			gpioExport("12");            			//-TEST-
-			gpioSetdir("gpio12", "in");   			//-TEST-
-			
 			while (true)								//Rien dans la boucle infinie du main puisque le code de lecture du capteur roule dans un thread appart
 			{
-				
 			}
 		}
 		
@@ -73,9 +62,7 @@ public class ClientEntrepot
 	public void EnvoyerAuServeur(String sIP, int nPort, String Message)
 	{   
         try
-        {
-			System.out.println(Message + " -> à été reçu par la fonction");
-						
+        {	
 			///*		Mettre en commentaire le bloc pour ne pas envoyer au serveur<- DÉBUT DU BLOC
 			System.out.println(Message + " -> sera envoyé au serveur");
             m_sClient = new Socket(sIP, nPort);                                     //Objet Socket pour établir la connexion au miniserveur
@@ -86,7 +73,6 @@ public class ClientEntrepot
 
             oosOut.close();															//Fermeture des objets de flux de données
             osOut.close();
-			System.out.println(Message + " -> à été envoyé au serveur");
 			//*/																	//- FIN DU BLOC
         }
         
@@ -137,146 +123,6 @@ public class ClientEntrepot
             System.out.println("Nombre d'arguments incorrect (IP + Port)");
         }
     }
-	
-	//À ENLEVER DANS LA VERSION FINALE -TEST-
-    public boolean gpioUnexport(String gpioid)   
-    {  
-        boolean bError = true;  													//Pour gestion des erreurs
-		
-        try
-        {
-            String sCommande = "echo \"" + gpioid + "\">/sys/class/gpio/unexport";  //Commande bash à être exécutée
-            String[] sCmd = {"/bin/bash", "-c", sCommande};                       	//Spécifie que l'interpreteur de commandes est BASH. Le "-c" indique que la commande à exécuter suit
-                                                                                    
-            System.out.println(sCmd[0] + " " + sCmd[1] + " " + sCmd[2]);            //Affiche la commande à exécuter dans la console Java
-            Process p = Runtime.getRuntime().exec(sCmd);                            //Exécute la commande par le système Linux (le programme Java
-                                                                                    //doit être démarré par le root pour les accès aux GPIO)
- 
-            if(p.getErrorStream().available() > 0)                                  //Vérification s'il y a une erreur d'exécution par l'interpreteur de commandes BASH
-            {
-                // Affiche l'erreur survenue
-                bError = false;
-                BufferedReader brCommand = new BufferedReader(new InputStreamReader(p.getErrorStream()));
-                System.out.println(brCommand.readLine());
-                brCommand.close();
-			}
-			
-			Thread.sleep(20);   												//Délai pour laisser le temps au kernel d'agir
-        }
-		
-        catch (Exception e)      												//Traitement de l'erreur par la VM Java (différent de l'erreur par l'interpreteur BASH)
-        {
-			//Affiche l'erreur survenue en Java
-            bError = false;
-            System.out.println("Error on export GPIO :" + gpioid);
-            System.out.println(e.toString());
-        }
-		
-        return  bError;
-    }
-	
-	//À ENLEVER DANS LA VERSION FINALE -TEST-
-    public boolean gpioExport(String gpioid)   
-    {  
-        boolean bError = true;  												//Pour gestion des erreurs
-        
-		try
-        {
-            String s = "echo \"" + gpioid + "\">/sys/class/gpio/export";        //Commande bash à être exécutée
-            String[] sCmd = {"/bin/bash", "-c", s};                            	//Spécifie que l'interpreteur de commandes est BASH. Le "-c"
-                                                                                //indique que la commande à exécuter suit
-                                                                                
-            System.out.println(sCmd[0] + " " + sCmd[1] + " " + sCmd[2]);        //Affiche la commande à exécuter dans la console Java
-            Process p = Runtime.getRuntime().exec(sCmd);                        //Exécute la commande par le système Linux (le programme Java 
-                                                                                //doit être démarré par le root pour les accès aux GPIO)
-     
-            if (p.getErrorStream().available() > 0)        						//Vérification s'il y a une erreur d'exécution par l'interpréteur de commandes BASH
-            {
-                //Affiche l'erreur survenue
-                bError = false;
-                BufferedReader brCommand = new BufferedReader(new InputStreamReader(p.getErrorStream()));
-                System.out.println(brCommand.readLine());
-                brCommand.close();
-            }
-            Thread.sleep(100);      											//Délai pour laisser le temps au kernel d'agir
-        }
-		 
-		catch (Exception e)         											//Traitement de l'erreur par la VM Java (différent de l'erreur par l'interpreteur BASH)
-		{
-			//Affiche l'erreur survenue en Java
-			bError = false;
-			System.out.println("Error on export GPIO :" + gpioid);
-			System.out.println(e.toString());
-		}
-		 
-        return bError;
-    }  
-	
-	//À ENLEVER DANS LA VERSION FINALE -TEST-
-    public boolean gpioSetdir(String name_gpio, String sMode)   
-    {  
-        boolean bError = true;  												//Pour gestion des erreurs
-		
-        try
-        {
-			String sCommande = "echo \"" + sMode + "\" >/sys/class/gpio/" + name_gpio + "/direction";   //Commande bash à être exécutée
-            String[] sCmd = { "/bin/bash", "-c", sCommande };                                           //Spécifie que l'interpreteur de commandes est BASH. Le "-c"
-                                                                                                        //Indique que la commande à exécuter suit
-                                                                                    
-            System.out.println(sCmd[0] + " " + sCmd[1] + " " + sCmd[2]);    	//Affiche la commande à exécuter dans la console Java
-            Process p = Runtime.getRuntime().exec(sCmd);                    	//Exécute la commande par le système Linux (le programme Java doit 
-																				//être démarré par le root pour les accès aux GPIO)
-     
-            if(p.getErrorStream().available() > 0)        						//Vérification s'il y a une erreur d'exécution par l'interpreteur de commandes BASH
-            {
-                //Affiche l'erreur survenue
-                bError = false;
-                BufferedReader brCommand = new BufferedReader(new InputStreamReader(p.getErrorStream()));
-                sCommande = brCommand.readLine();
-                System.out.println(sCommande);
-                brCommand.close();
-            }
-			
-            Thread.sleep(100);      											//Délai pour laisser le temps au kernel d'agir
-	    }
-		
-	    catch (Exception e)
-	    {
-			//Affiche l'erreur survenue en Java
-			bError = false;
-			System.out.println("Error on direction setup :");
-			System.out.println(e.toString());
-	    }
-		
-		return bError;
-    }
-
-	//À ENLEVER DANS LA VERSION FINALE -TEST-
-    public Integer gpioSetBit(String name_gpio, String value)   
-    {       
-        try
-        {
-            FileOutputStream fos = new FileOutputStream("/sys/class/gpio/" + name_gpio + "/value");             //Sélection de la destination du flux de
-                                                                                                            //données (sélection du fichier de sortie)
-                                                                                                            
-            DataOutputStream dos = new DataOutputStream(fos);                                               //Canal vers le fichier (sortie en "streaming")
-            dos.write(value.getBytes(), 0, 1);                                                              //Écriture dans le fichier
-                                                                                                            //(changera l'état du GPIO: 0 ==> niveau bas et différent de 0 niveau haut)
-                                                                                                            
-            System.out.println("/sys/class/gpio/" + name_gpio + "/value = " + value);                        //Affiche l'action réalisée dans la console Java
-            dos.close();                                                                                    //Fermeture du canal
-            fos.close();                                                                                    //Fermeture du flux de données
-        }
-		
-        catch(Exception e)																					//Affiche l'erreur survenue en Java
-        {
-            value = "-1";
-            System.out.println("Error on gpio setbits" + name_gpio + " :");
-            System.out.println(e.toString());
-        }
-		
-        return new Integer(value);  																		//Retourne l'état "supposé" de la sortie
-	}
 }
 
 //Thread qui permet de calculer la vitesse de rotation en utilisant le temps entre chaque front montant
@@ -461,13 +307,6 @@ class LectureCapteur implements Runnable				//Runnable puisque la classe contien
 					{
 						humidity = 0.0;
 					}
-				
-				/*
-				System.out.printf("Temperature in Celsius : %.2f C %n", cTemp);
-				System.out.printf("Temperature in Fahrenheit : %.2f F %n", fTemp);
-				System.out.printf("Pressure : %.2f hPa %n", pressure);
-				System.out.printf("Relative Humidity : %.2f %% RH %n", humidity);
-				*/
 				//FIN DU CODE TROUVÉ SUR INTERNET <---
 		
 				pressure = pressure / 10;								//Pour avoir la pression en bars au lieu de deci-bars
@@ -479,76 +318,10 @@ class LectureCapteur implements Runnable				//Runnable puisque la classe contien
 				//ID (EN) = Entrepot, R à 0 puisque nous nous en servons pas. C'est une structure de fichier json qui sera ensuite transformée en fichier csv par Hologram
 				//Cette string sera envoyée au serveur qui l'envoiera ensuite à Hologram, qui lui va l'envoyer à S3 puis à QuickSight en fichier csv
 				m_Parent.EnvoyerAuServeur(m_Parent.m_IP, m_Parent.m_Port, String.valueOf("\"{ \\\"ID\\\":\\\"EN\\\", \\\"T\\\":\\\"" + Temperature + "\\\", \\\"P\\\":\\\"" + Pression + "\\\", \\\"H\\\":\\\"" + Humidite + "\\\", \\\"R\\\":\\\"0\\\" }\""));
-				Thread.sleep(3565252);			//1 Heure
+				Thread.sleep(3525000);					//58.75 minutes
 			}
 			
 			catch(Exception e)
-			{
-				System.out.println(e.toString());
-			}
-		}
-	}
-}
-
-//Cette classe sert à simuler un RPM pour l'écrémeuse et la centrifugeuse pour des tests de longue durée.
-//ELLE NE DOIT PAS SE RETROUVER DANS LA VERSION FINALE DU PROJET -TEST-
-class SimuleRPM implements Runnable
-{
-	Thread m_Thread;									
-    private ClientEntrepot m_Parent;					//Référence vers la classe principale (ClientEntrepot)
-
-	public SimuleRPM(ClientEntrepot Parent)		//Constructeur
-	{
-		try
-		{
-			m_Parent = Parent;							//Référence vers la classe principale (ClientEntrepot)
-			
-			m_Thread = new Thread(this);				//Crée le thread dans cette classe
-			m_Thread.start();							//Démarre le thread
-		}
-		
-		catch(Exception e)
-		{
-			System.out.println(e.toString());
-		}
-	}
-
-	public void run()									//Thread qui roule en parallèle de la classe principale, fonction appelée automatiquement après le constructeur de la classe
-	{
-		while (true)									//Boucle infinie sinon le thread se termine
-		{
-			try
-			{
-				Thread.sleep(1200000);					//2 heures entre chaque fois que le Pi boot
-				m_Parent.gpioSetBit("gpio12", "1");		//Réveille l'écrémeuse et la centrifugeuse
-				Thread.sleep(1000);
-				m_Parent.gpioSetBit("gpio12", "0");		//Remets le bit à 0 1 seconde après que le Pi boot
-
-				Thread.sleep(90000);					//1min30secs après avoir booté
-
-				for (int i = 0; i < 10; i++)
-				{
-					//Premier tour
-					m_Parent.gpioSetBit("gpio12", "1");		
-					Thread.sleep(2500);	
-					m_Parent.gpioSetBit("gpio12", "0");		
-					Thread.sleep(2500);		
-
-					//Deuxième tour
-					m_Parent.gpioSetBit("gpio12", "1");		
-					Thread.sleep(3500);	
-					m_Parent.gpioSetBit("gpio12", "0");		
-					Thread.sleep(2000);	
-
-					//Troisième tour
-					m_Parent.gpioSetBit("gpio12", "1");		
-					Thread.sleep(2500);	
-					m_Parent.gpioSetBit("gpio12", "0");		
-					Thread.sleep(5000);	
-				}		
-			}
-
-			catch (Exception e)
 			{
 				System.out.println(e.toString());
 			}
