@@ -25,6 +25,11 @@ public class ClientCentrifugeuse
 	
 	public Shutdown m_objShutdown;						//Objet pour la classe qui éteint le Pi après un délai d'inactivité
 	public CalculeRPM m_objCalculeRPM;					//Objet pour la classe qui calcule le RPM avec la reed switch branchée sur GPIO 3 et GND
+
+	public static final String GPIO_IN = "in";        	//Pour configurer la direction de la broche GPIO   
+	public static final String NUMBER_GPIO = "3";   	//ID du GPIO de le Raspberry Pi avec le capteur Reed switch, gpio 3 parce que c'est la pin "reset" du Pi
+														//qui lui permet de sortir du mode veille lorsqu'elle devient à un niveau haut
+	public static final String NAME_GPIO = "gpio3";     //Nom du GPIO pour le kernel Raspbian
 	
 	String m_IP;										//Adresse du serveur
 	int m_Port;											//Port de communication avec le serveur
