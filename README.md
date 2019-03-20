@@ -62,6 +62,11 @@ pi4j -c ClientEcremeuse.java
 ```sh
 javac ClientCentrifugeuse.java
 ```
+##### Module Arduino MKR GSM 1400
+* Compiler le code avec Arduino CLI
+```sh
+arduino-cli compile --fqbn arduino:samd:mkrgsm1400 /home/pi/ProjetNepal/CodeArduino/MQTT/ --build-path /home/pi/ProjetNepal/CodeArduino/MQTT/Compile/
+```
 
 ## Éxécuter le code manuellement
 > Si jamais on le désire, nous pouvons éxécuter les codes manuellement au lieu de "rebooter" les Pi. À noter qu'il est mieux d'arrêter l'éxécution automatique des codes avant de les partir manuellement (voir la section "Démarrer les codes sur les différents Raspberry Pi" pour plus d'informations). Pour éxécuter manuellement les codes, il faut se trouver dans le même répertoire que ceux-ci (voir la section "Compiler le code manuellement" pour plus d'informations). Le code doit avoir déja été compilé au moins une fois avant de pouvoir l'éxécuter.
@@ -88,6 +93,11 @@ pi4j -r ClientEcremeuse 192.168.4.1 2228
 > 192.168.4.1 est l'adresse du serveur, et 2228 est le port de communication
 ```sh
 java ClientCentrifugeuse 192.168.4.1 2228
+```
+##### Client Centrifugeuse (Pi ZeroW)
+* Éxécuter le code avec Arduino CLI
+```sh
+arduino-cli upload -p /dev/ttyACM0 -v --fqbn arduino:samd:mkrgsm1400
 ```
 
 ## Description des fichiers
