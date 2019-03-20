@@ -114,13 +114,30 @@ Code qui sert pour le plan B de notre projet (si le plan A, Hologram ne fonction
 Ce fichier contient les certificats nécéssaire pour s'authentifier sur les serveurs MQTT de AWS IoT Core avant de pouvoir envoyer des informations. Il est utilisé par le code MQTT.ino.
 
 ##### Serveur-start.sh
-Bien que ce fichier s'apelle Serveur-start, il est (presque) identique à ceux qui se retrouvent sur tous les Pi. En effet, ce fichier sert à démarrer le code respectif de chaque Pi quand il est appelé. Il faut juste changer le nom du fichier et la dernière commande de celui-ci par le Pi que nous voulons utiliser pour qu'il fonctionne. (Exemple, pour ClientEcremeuse, changer le nom du fichier pour ClientEcremeuse-start.sh et changer la dernière commande du fichier par pi4j -r ClientEcremeuse 192.168.4.1 2228)
+Bien que ce fichier s'apelle Serveur-start, il est (presque) identique à ceux qui se retrouvent sur tous les Pi. En effet, ce fichier sert à démarrer le code respectif de chaque Pi quand il est appelé. Il faut juste changer le nom du fichier et la dernière commande de celui-ci par le Pi que nous voulons utiliser pour qu'il fonctionne. 
+Exemple: pour ClientEcremeuse, changer le nom du fichier pour ClientEcremeuse-start.sh et changer la dernière commande du fichier par 
+```sh
+pi4j -r ClientEcremeuse 192.168.4.1 2228
+```
 
 ##### Serveur-stop.sh
-Bien que ce fichier s'apelle Serveur-stop, il est (presque) identique à ceux qui se retrouvent sur tous les Pi. En effet, ce fichier sert à arrêter manuellement le code respectif de chaque Pi quand il est appelé. Il faut juste changer le nom du fichier et l'avant dernière commande de celui-ci par le Pi que nous voulons utiliser pour qu'il fonctionne. (Exemple, pour ClientEcremeuse, changer le nom du fichier pour ClientEcremeuse-stop.sh et changer l'avant dernière commande du fichier par pid=`ps aux | grep Serveur | awk '{print $2}'`)
+Bien que ce fichier s'apelle Serveur-stop, il est (presque) identique à ceux qui se retrouvent sur tous les Pi. En effet, ce fichier sert à arrêter manuellement le code respectif de chaque Pi quand il est appelé. Il faut juste changer le nom du fichier et l'avant dernière commande de celui-ci par le Pi que nous voulons utiliser pour qu'il fonctionne. 
+Exemple: pour ClientEcremeuse, changer le nom du fichier pour ClientEcremeuse-stop.sh et changer l'avant dernière commande du fichier par 
+```sh
+pid=`ps aux | grep Serveur | awk '{print $2}'`
+```
 
 ##### monScript
-Ce ce retrouve sur tous les Pi, et il est (presque) identique sur chaqun d'eux. Ce code est apellé lors du démarrage des Pi et sert à lancer les différents codes. Pour changer sur quel Pi ce fichier peut aller, il faut seulement changer les commandes à l'intérieur pour le bon nom de fichier sh. (Exemple, pour ClientEcremeuse, changer les /home/pi/ProjetNepal/Serveur-start.sh et /home/pi/ProjetNepal/Serveur-stop.sh par /home/pi/ProjetNepal/ClientEcremeuse-start.sh et /home/pi/ProjetNepal/ClientEcremeuse-stop.sh)
+Ce ce retrouve sur tous les Pi, et il est (presque) identique sur chaqun d'eux. Ce code est apellé lors du démarrage des Pi et sert à lancer les différents codes. Pour changer sur quel Pi ce fichier peut aller, il faut seulement changer les commandes à l'intérieur pour le bon nom de fichier sh. Exemple: pour ClientEcremeuse, changer les 
+```sh
+/home/pi/ProjetNepal/Serveur-start.sh
+/home/pi/ProjetNepal/Serveur-stop.sh
+```
+par
+```sh
+/home/pi/ProjetNepal/ClientEcremeuse-start.sh
+/home/pi/ProjetNepal/ClientEcremeuse-stop.sh
+```
 
 ##### README.md
 Le fichier que vous lisez en ce moment, sert à afficher des informations pertinentes par rapport au projet.
@@ -130,4 +147,4 @@ Le fichier que vous lisez en ce moment, sert à afficher des informations pertin
 [Pi4j]: <http://pi4j.com/install.html>
 [I2C]: <https://learn.adafruit.com/adafruits-raspberry-pi-lesson-4-gpio-setup/configuring-i2c>
 [SDK]: <https://www.hackster.io/hologram/add-cellular-to-a-raspberry-pi-with-hologram-nova-ea5926>
-   [Dashboard]: <[Dashboard] https://dashboard.hologram.io>
+[Dashboard]: <[Dashboard] https://dashboard.hologram.io>
