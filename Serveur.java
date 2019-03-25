@@ -82,25 +82,86 @@ public class Serveur implements Runnable
 			{
 				System.out.println(Informations + " -> à été reçu d'un client");
 				
-				//Mettre en commentaire le bloc pour ne pas envoyer à Hologram      <- DÉBUT DU BLOC
-				System.out.println(Informations + " -> sera envoyé à Hologram");
-				String s = "sudo hologram send " + Informations;    			//Commande bash a etre executee
-				String[] sCmd = {"/bin/bash", "-c", s};             			//Specifie que l'interpreteur de commandes est BASH. Le "-c" indique que la commande a executer suit
+                /*//Ce bloc permet de d'activer l'alimentation sur les ports USB                  //<- DÉBUT DU BLOC
+                String s1 = "echo '1-1' |sudo tee /sys/bus/usb/drivers/usb/bind";    			//Commande bash a etre executee
+				String[] sCmd1 = {"/bin/bash", "-c", s1};             			                //Specifie que l'interpreteur de commandes est BASH. Le "-c" indique que la commande a executer suit
 
-				System.out.println(sCmd[0] + " " + sCmd[1] + " " + sCmd[2]);    //Affiche la commande a executer dans la console Java
-				Process p = Runtime.getRuntime().exec(sCmd);        			//Execute la commande par le systeme Linux (le programme Java doit etre demarré par le root pour les acces aux GPIO)
+				System.out.println(sCmd1[0] + " " + sCmd1[1] + " " + sCmd1[2]);                 //Affiche la commande a executer dans la console Java
+				Process p1 = Runtime.getRuntime().exec(sCmd1);        			                //Execute la commande par le systeme Linux (le programme Java doit etre demarré par le root pour les acces aux GPIO)
 
-				if (p.getErrorStream().available() > 0)        					//Verification s'il y a une erreur d'execution par l'interpreteur de commandes BASH
+				if (p1.getErrorStream().available() > 0)        					            //Verification s'il y a une erreur d'execution par l'interpreteur de commandes BASH
 				{
 					//Affiche l'erreur survenue
-					BufferedReader brCommand = new BufferedReader(new InputStreamReader(p.getErrorStream()));
-					System.out.println(brCommand.readLine());
-					brCommand.close();
+					BufferedReader brCommand1 = new BufferedReader(new InputStreamReader(p1.getErrorStream()));
+					System.out.println(brCommand1.readLine());
+					brCommand1.close();
 				}
 
-				Thread.sleep(100);      										//Delai pour laisser le temps au kernel d'agir
+				Thread.sleep(100);      										                //Delai pour laisser le temps au kernel d'agir
+                                                                                                //<-FIN DU BLOC
+																								
+				Thread.sleep(30000);               //Délai de 30 secondes pour laisser le temps au modem d'avoir un signal LTE
+				
+				//Bloc qui sert à faire un test de connection avant d'envoyer des données     	//<- DÉBUT DU BLOC
+				System.out.println(Informations + " -> sera envoyé à Hologram");
+				String s4 = "sudo hologram network connect";    			    	//Commande bash a etre executee
+				String[] sCmd4 = {"/bin/bash", "-c", s4};             			    //Specifie que l'interpreteur de commandes est BASH. Le "-c" indique que la commande a executer suit
+
+				System.out.println(sCmd4[0] + " " + sCmd4[1] + " " + sCmd4[2]);     //Affiche la commande a executer dans la console Java
+				Process p4 = Runtime.getRuntime().exec(sCmd4);        			    //Execute la commande par le systeme Linux (le programme Java doit etre demarré par le root pour les acces aux GPIO)
+
+				if (p4.getErrorStream().available() > 0)        					//Verification s'il y a une erreur d'execution par l'interpreteur de commandes BASH
+				{
+					//Affiche l'erreur survenue
+					BufferedReader brCommand4 = new BufferedReader(new InputStreamReader(p4.getErrorStream()));
+					System.out.println(brCommand4.readLine());
+					brCommand4.close();
+				}
+
+				Thread.sleep(100);      										    //Delai pour laisser le temps au kernel d'agir
+				                                                                    //<- FIN DU BLOC
+
+                Thread.sleep(60000);               //Délai de 60 secondes pour laisser le temps au modem d'avoir un signal LTE*/
+
+				//Mettre en commentaire le bloc pour ne pas envoyer à Hologram      //<- DÉBUT DU BLOC
+				System.out.println(Informations + " -> sera envoyé à Hologram");
+				String s2 = "sudo hologram send " + Informations;    			    //Commande bash a etre executee
+				String[] sCmd2 = {"/bin/bash", "-c", s2};             			    //Specifie que l'interpreteur de commandes est BASH. Le "-c" indique que la commande a executer suit
+
+				System.out.println(sCmd2[0] + " " + sCmd2[1] + " " + sCmd2[2]);     //Affiche la commande a executer dans la console Java
+				Process p2 = Runtime.getRuntime().exec(sCmd2);        			    //Execute la commande par le systeme Linux (le programme Java doit etre demarré par le root pour les acces aux GPIO)
+
+				if (p2.getErrorStream().available() > 0)        					//Verification s'il y a une erreur d'execution par l'interpreteur de commandes BASH
+				{
+					//Affiche l'erreur survenue
+					BufferedReader brCommand2 = new BufferedReader(new InputStreamReader(p2.getErrorStream()));
+					System.out.println(brCommand2.readLine());
+					brCommand2.close();
+				}
+
+				Thread.sleep(100);      										    //Delai pour laisser le temps au kernel d'agir
 				System.out.println(Informations + " -> à été envoyé à Hologram");
-				//<- FIN DU BLOC
+				                                                                    //<- FIN DU BLOC
+																					
+				/*Thread.sleep(30000);               //Délai de 30 secondes pour laisser le temps d'envoyer la donnée
+
+                //Ce bloc permet de de désactiver l'alimentation sur les ports USB                  //<- DÉBUT DU BLOC
+                String s3 = "echo '1-1' |sudo tee /sys/bus/usb/drivers/usb/unbind";    			    //Commande bash a etre executee
+                String[] sCmd3 = {"/bin/bash", "-c", s3};             			                    //Specifie que l'interpreteur de commandes est BASH. Le "-c" indique que la commande a executer suit
+
+				System.out.println(sCmd3[0] + " " + sCmd3[1] + " " + sCmd3[2]);                     //Affiche la commande a executer dans la console Java
+				Process p3 = Runtime.getRuntime().exec(sCmd3);        			                    //Execute la commande par le systeme Linux (le programme Java doit etre demarré par le root pour les acces aux GPIO)
+
+				if (p3.getErrorStream().available() > 0)        					                //Verification s'il y a une erreur d'execution par l'interpreteur de commandes BASH
+				{
+					//Affiche l'erreur survenue
+					BufferedReader brCommand3 = new BufferedReader(new InputStreamReader(p3.getErrorStream()));
+					System.out.println(brCommand3.readLine());
+					brCommand3.close();
+				}
+
+				Thread.sleep(100);      										                    //Delai pour laisser le temps au kernel d'agir
+                                                                                                    //FIN DU BLOC*/
 			}
 
 			catch (Exception e)
