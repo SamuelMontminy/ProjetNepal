@@ -52,6 +52,7 @@ public class ClientEcremeuse
 		
 		try
 		{
+			
 			gpioUnexport("3");          						//Déffectation du GPIO #3 (au cas ou ce GPIO est déjè défini par un autre programme)
 			gpioExport("3");            						//Affectation du GPIO #3
 			gpioSetdir("gpio3", "in");   						//Place GPIO #3 en entrée
@@ -491,6 +492,14 @@ class Shutdown implements Runnable					//Runnable puisque la classe contient un 
 			{
 				if (m_Countdown == 0)														//Si aucun front montant n'à été détecté dans les deux dernières minutes
 				{
+					m_Parent.EnvoyerAuServeur(m_Parent.m_IP, m_Parent.m_Port, String.valueOf("\"{ \\\"ID\\\":\\\"EC\\\", \\\"T\\\":\\\"0\\\", \\\"P\\\":\\\"0\\\", \\\"H\\\":\\\"0\\\", \\\"R\\\":\\\"0\\\" }\""));
+					Thread.sleep(10000);
+					m_Parent.EnvoyerAuServeur(m_Parent.m_IP, m_Parent.m_Port, String.valueOf("\"{ \\\"ID\\\":\\\"EC\\\", \\\"T\\\":\\\"0\\\", \\\"P\\\":\\\"0\\\", \\\"H\\\":\\\"0\\\", \\\"R\\\":\\\"0\\\" }\""));
+					Thread.sleep(10000);
+					m_Parent.EnvoyerAuServeur(m_Parent.m_IP, m_Parent.m_Port, String.valueOf("\"{ \\\"ID\\\":\\\"EC\\\", \\\"T\\\":\\\"0\\\", \\\"P\\\":\\\"0\\\", \\\"H\\\":\\\"0\\\", \\\"R\\\":\\\"0\\\" }\""));
+					Thread.sleep(10000);
+					m_Parent.EnvoyerAuServeur(m_Parent.m_IP, m_Parent.m_Port, String.valueOf("\"{ \\\"ID\\\":\\\"EC\\\", \\\"T\\\":\\\"0\\\", \\\"P\\\":\\\"0\\\", \\\"H\\\":\\\"0\\\", \\\"R\\\":\\\"0\\\" }\""));
+					Thread.sleep(10000);
 					m_Countdown--;															//Pour ne pas que la commande soit éxécutée plusieurs fois
 					String sCommande = "shutdown now";  									//Commande bash à être exécutée
 					String[] sCmd = {"/bin/bash", "-c", sCommande};                       	//Spécifie que l'interpreteur de commandes est BASH. Le "-c" indique que la commande à exécuter suit
@@ -567,7 +576,7 @@ class LectureCapteur implements Runnable			//Runnable puisque la classe contient
 				//ID (EC) = Écrémeuse, R,P,H à 0 puisque nous nous en servons pas. C'est une structure de fichier json qui sera ensuite transformée en fichier csv par Hologram
 				//Cette string sera envoyée au serveur qui l'envoiera ensuite à Hologram, qui lui va l'envoyer à S3 puis à QuickSight en fichier csv
 				m_Parent.EnvoyerAuServeur(m_Parent.m_IP, m_Parent.m_Port, String.valueOf("\"{ \\\"ID\\\":\\\"EC\\\", \\\"T\\\":\\\"" + Temperature + "\\\", \\\"P\\\":\\\"0\\\", \\\"H\\\":\\\"0\\\", \\\"R\\\":\\\"0\\\" }\""));	
-				Thread.sleep(60000);			//1 minute
+				Thread.sleep(120000);			//2 minute
 			}
 			
 			catch (Exception e)
