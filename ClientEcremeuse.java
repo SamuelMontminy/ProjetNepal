@@ -40,6 +40,8 @@ public class ClientEcremeuse
 	
 	String m_IP;										//Adresse du serveur
 	int m_Port;											//Port de communication avec le serveur
+	
+	double Temperature;
     
     public ClientEcremeuse()
     {
@@ -52,6 +54,10 @@ public class ClientEcremeuse
 		
 		try
 		{
+			gpioUnexport("2");          						//Déffectation du GPIO #2 (au cas ou ce GPIO est déjè défini par un autre programme)
+			gpioExport("2");            						//Affectation du GPIO #2
+			gpioSetdir("gpio2", "in");   						//Place GPIO #2 en entrée
+			
 			gpioUnexport("3");          						//Déffectation du GPIO #3 (au cas ou ce GPIO est déjè défini par un autre programme)
 			gpioExport("3");            						//Affectation du GPIO #3
 			gpioSetdir("gpio3", "in");   						//Place GPIO #3 en entrée
@@ -67,6 +73,7 @@ public class ClientEcremeuse
 			gpioUnexport("13");          						//Déffectation du GPIO #13 (au cas ou ce GPIO est déjè défini par un autre programme)
 			gpioExport("13");            						//Affectation du GPIO #13
 			gpioSetdir("gpio13", "out");   						//Place GPIO #13 en sorti
+			
 
 			m_objShutdown = new Shutdown(this);					//Instancie l'objet de la classe Shutdown avec une référence vers la classe principale (ClientEcremeuse)
 			m_objCalculeRPM = new CalculeRPM(this);				//Instancie l'objet de la classe CalculeRPM avec une référence vers la classe principale (ClientEcremeuse)
@@ -77,6 +84,13 @@ public class ClientEcremeuse
 			
 			while (true)										//Rien dans la boucle infinie du main puisque le code de lecture du capteur roule dans un thread appart
 			{
+				if(gpioReadBit("gpio2") == 0)
+				{
+					while(gpioReadBit("gpio2") == 0);
+					Thread.sleep(25); //Rebond
+					EnvoyerAuServeur(m_IP, m_Port, String.valueOf("\"{ \\\"ID\\\":\\\"EC\\\", \\\"T\\\":\\\"" + Temperature + "\\\", \\\"P\\\":\\\"0\\\", \\\"H\\\":\\\"0\\\", \\\"R\\\":\\\"0\\\" }\""));					
+				}
+				Thread.sleep(25); 
 			}
 		}
 		
@@ -376,14 +390,14 @@ class CalculeRPM implements Runnable				//Runnable puisque la classe contient un
 				while (m_Parent.gpioReadBit(m_Parent.NAME_GPIO) == 1)
 				{
 				}	//Détecte un front montant
-				Thread.sleep(150);							//Anti rebond
+				Thread.sleep(75);							//Anti rebond
 				
 				start = Instant.now();
 				
 				while (m_Parent.gpioReadBit(m_Parent.NAME_GPIO) == 0)
 				{
 				}	//Front descendant
-				Thread.sleep(150);							//Anti rebond
+				Thread.sleep(75);							//Anti rebond
 				
 				while (m_Parent.gpioReadBit(m_Parent.NAME_GPIO) == 1)
 				{
@@ -391,11 +405,11 @@ class CalculeRPM implements Runnable				//Runnable puisque la classe contient un
 				
 				end = Instant.now();
 				
-				Thread.sleep(150);							//Anti rebond 
+				Thread.sleep(75);							//Anti rebond 
 				
 				duree = Duration.between(start, end);		//La durée entre deux fronts montants (en millisecondes) est la durée entre start et end
 				MilliSecondes = duree.toMillis();
-				RPM = 60000 / (MilliSecondes - 300);																		//Convertit le temps en millisecondes en RPM
+				RPM = 60000 / (MilliSecondes - 150);																		//Convertit le temps en millisecondes en RPM
 				System.out.println("Tour en: " + String.valueOf(MilliSecondes) + "ms, RPM: " + String.valueOf(RPM));
 				
 				if (RPM < 40)
@@ -492,12 +506,12 @@ class Shutdown implements Runnable					//Runnable puisque la classe contient un 
 				if (m_Countdown == 0)														//Si aucun front montant n'à été détecté dans les deux dernières minutes
 				{
 					//Envoie trois 0 quand le Pi s'éteint pour pouvoir mieux visualiser dans les graphiques
-					m_Parent.EnvoyerAuServeur(m_Parent.m_IP, m_Parent.m_Port, String.valueOf("\"{ \\\"ID\\\":\\\"EC\\\", \\\"T\\\":\\\"0\\\", \\\"P\\\":\\\"0\\\", \\\"H\\\":\\\"0\\\", \\\"R\\\":\\\"0\\\" }\""));
+					/*m_Parent.EnvoyerAuServeur(m_Parent.m_IP, m_Parent.m_Port, String.valueOf("\"{ \\\"ID\\\":\\\"EC\\\", \\\"T\\\":\\\"0\\\", \\\"P\\\":\\\"0\\\", \\\"H\\\":\\\"0\\\", \\\"R\\\":\\\"0\\\" }\""));
 					Thread.sleep(10000);
 					m_Parent.EnvoyerAuServeur(m_Parent.m_IP, m_Parent.m_Port, String.valueOf("\"{ \\\"ID\\\":\\\"EC\\\", \\\"T\\\":\\\"0\\\", \\\"P\\\":\\\"0\\\", \\\"H\\\":\\\"0\\\", \\\"R\\\":\\\"0\\\" }\""));
 					Thread.sleep(10000);
 					m_Parent.EnvoyerAuServeur(m_Parent.m_IP, m_Parent.m_Port, String.valueOf("\"{ \\\"ID\\\":\\\"EC\\\", \\\"T\\\":\\\"0\\\", \\\"P\\\":\\\"0\\\", \\\"H\\\":\\\"0\\\", \\\"R\\\":\\\"0\\\" }\""));
-					Thread.sleep(10000);
+					Thread.sleep(10000);*/
 					
 					m_Countdown--;															//Pour ne pas que la commande soit éxécutée plusieurs fois
 					String sCommande = "shutdown now";  									//Commande bash à être exécutée
@@ -517,7 +531,7 @@ class Shutdown implements Runnable					//Runnable puisque la classe contient un 
 				
 				else																			//Décrémente la valeur du compteur d'inactivité à chaque seconde
 				{
-					m_Countdown--;																//À COMMENTER POUR PAS QUE LE PI SE FERME AUTO POUR LE TEST LONGUE DURÉE
+					//m_Countdown--;															//À COMMENTER POUR PAS QUE LE PI SE FERME AUTO POUR LE TEST LONGUE DURÉE
 					Thread.sleep(1000);
 					System.out.println("Countdown: " + String.valueOf(m_Countdown));
 				}
@@ -540,7 +554,7 @@ class LectureCapteur implements Runnable			//Runnable puisque la classe contient
 	
 	W1Master w1Master = new W1Master();				//Besoin pour le code trouvé sur internet		
 		
-	double Temperature = 0;
+	
 	
 	public LectureCapteur(ClientEcremeuse Parent)	//Constructeur
 	{
@@ -550,6 +564,7 @@ class LectureCapteur implements Runnable			//Runnable puisque la classe contient
 			
 			m_Thread = new Thread(this);			//Crée le thread
 			m_Thread.start();						//Démarre le thread
+			m_Parent.Temperature = 0;
 		}
 		
 		catch (Exception e)
@@ -568,14 +583,14 @@ class LectureCapteur implements Runnable			//Runnable puisque la classe contient
 				//Agis comme un for each --> met les elements de la classe température dans objet device
 				for (TemperatureSensor device : w1Master.getDevices(TemperatureSensor.class)) 
 				{
-					Temperature = device.getTemperature();
+					m_Parent.Temperature = device.getTemperature();
 				}
 				//FIN DU CODE TROUVÉ SUR INTERNET <---
 				
 				//ID (EC) = Écrémeuse, R,P,H à 0 puisque nous nous en servons pas. C'est une structure de fichier json qui sera ensuite transformée en fichier csv par Hologram
 				//Cette string sera envoyée au serveur qui l'envoiera ensuite à Hologram, qui lui va l'envoyer à S3 puis à QuickSight en fichier csv
-				m_Parent.EnvoyerAuServeur(m_Parent.m_IP, m_Parent.m_Port, String.valueOf("\"{ \\\"ID\\\":\\\"EC\\\", \\\"T\\\":\\\"" + Temperature + "\\\", \\\"P\\\":\\\"0\\\", \\\"H\\\":\\\"0\\\", \\\"R\\\":\\\"0\\\" }\""));	
-				Thread.sleep(120000);			//2 minute
+				m_Parent.EnvoyerAuServeur(m_Parent.m_IP, m_Parent.m_Port, String.valueOf("\"{ \\\"ID\\\":\\\"EC\\\", \\\"T\\\":\\\"" + m_Parent.Temperature + "\\\", \\\"P\\\":\\\"0\\\", \\\"H\\\":\\\"0\\\", \\\"R\\\":\\\"0\\\" }\""));	
+				Thread.sleep(600000);			//10 minute
 			}
 			
 			catch (Exception e)
