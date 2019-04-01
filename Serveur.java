@@ -160,7 +160,11 @@ class EnvoieInformations implements Runnable
         {
             try
             {
-                /*//Ce bloc permet de d'activer l'alimentation sur les ports USB                  //<- DÉBUT DU BLOC
+                //-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+                Thread.sleep(1080000000);   //3 heures  <- DÉLAI ENTRE CHAQUE ENVOI DE DONNÉES, 2160000000=6H, 2880000000=8H, 4320000000=12H, 8640000000=24H
+                //-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+                //Ce bloc permet de d'activer l'alimentation sur les ports USB                  //<- DÉBUT DU BLOC
                 String s1 = "echo '1-1' |sudo tee /sys/bus/usb/drivers/usb/bind";    			//Commande bash a etre executee
 				String[] sCmd1 = {"/bin/bash", "-c", s1};             			                //Specifie que l'interpreteur de commandes est BASH. Le "-c" indique que la commande a executer suit
 
@@ -173,13 +177,10 @@ class EnvoieInformations implements Runnable
 					BufferedReader brCommand1 = new BufferedReader(new InputStreamReader(p1.getErrorStream()));
 					System.out.println(brCommand1.readLine());
 					brCommand1.close();
-				}
-
-				Thread.sleep(100);      										                //Delai pour laisser le temps au kernel d'agir
-                                                                                                //<-FIN DU BLOC
+				}                                                                               //<-FIN DU BLOC
 																								
                 //-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-				Thread.sleep(60000);               //Délai de 30 secondes pour laisser le temps au modem d'avoir un signal LTE
+				Thread.sleep(90000);               //Délai de 90 secondes pour laisser le temps au modem d'avoir un signal LTE
                 //-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 				
 				//Bloc qui sert à faire un test de connection avant d'envoyer des données     	//<- DÉBUT DU BLOC
@@ -196,36 +197,43 @@ class EnvoieInformations implements Runnable
 					BufferedReader brCommand4 = new BufferedReader(new InputStreamReader(p4.getErrorStream()));
 					System.out.println(brCommand4.readLine());
 					brCommand4.close();
-				}
-
-				Thread.sleep(100);      										                //Delai pour laisser le temps au kernel d'agir
-				                                                                                //<- FIN DU BLOC
+				}                                                                               //<- FIN DU BLOC
 
                 //-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-                Thread.sleep(30000);               //Délai de 60 secondes pour laisser le temps au modem d'avoir un signal LTE
+                Thread.sleep(60000);               //Délai de 60 secondes pour laisser le temps au modem d'avoir un signal LTE
                 //-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
 				//Ce bloc éxécute la commande qui envoie les informations à Hologram            //<- DÉBUT DU BLOC
-				System.out.println(Donnee + " -> sera envoyé à Hologram");
-				String s2 = "sudo hologram send " + Donnee;    			                //Commande bash a etre executee
-				String[] sCmd2 = {"/bin/bash", "-c", s2};             			                //Specifie que l'interpreteur de commandes est BASH. Le "-c" indique que la commande a executer suit
+                
+                BufferedReader br = new BufferedReader(new FileReader("/home/pi/ProjetNepal/Data.txt"));
 
-				System.out.println(sCmd2[0] + " " + sCmd2[1] + " " + sCmd2[2]);                 //Affiche la commande a executer dans la console Java
-				Process p2 = Runtime.getRuntime().exec(sCmd2);        			                //Execute la commande par le systeme Linux (le programme Java doit etre demarré par le root pour les acces aux GPIO)
+                while ((Donnee = br.readLine()) != null) 
+                {
+                    System.out.println(Donnee + " -> sera envoyé à Hologram");
 
-				if (p2.getErrorStream().available() > 0)        					            //Verification s'il y a une erreur d'execution par l'interpreteur de commandes BASH
-				{
-					//Affiche l'erreur survenue
-					BufferedReader brCommand2 = new BufferedReader(new InputStreamReader(p2.getErrorStream()));
-					System.out.println(brCommand2.readLine());
-					brCommand2.close();
-				}
+                    String s2 = "sudo hologram send " + Donnee;    			                    //Commande bash a etre executee
+                    String[] sCmd2 = {"/bin/bash", "-c", s2};             			            //Specifie que l'interpreteur de commandes est BASH. Le "-c" indique que la commande a executer suit
 
-				Thread.sleep(100);      										                //Delai pour laisser le temps au kernel d'agir
-				System.out.println(Donnee + " -> à été envoyé à Hologram");               //<- FIN DU BLOC   
+                    System.out.println(sCmd2[0] + " " + sCmd2[1] + " " + sCmd2[2]);             //Affiche la commande a executer dans la console Java
+                    Process p2 = Runtime.getRuntime().exec(sCmd2);        			            //Execute la commande par le systeme Linux (le programme Java doit etre demarré par le root pour les acces aux GPIO)
+
+                    if (p2.getErrorStream().available() > 0)        					        //Verification s'il y a une erreur d'execution par l'interpreteur de commandes BASH
+                    {
+                        //Affiche l'erreur survenue
+                        BufferedReader brCommand2 = new BufferedReader(new InputStreamReader(p2.getErrorStream()));
+                        System.out.println(brCommand2.readLine());
+                        brCommand2.close();
+                    }
+
+                    System.out.println(Donnee + " -> à été envoyé à Hologram");
+
+                    Thread.sleep(60000);                                                        //1 minute entre chaque donnée
+                }
+
+                br.close();                                                                     //<- FIN DU BLOC				                     
 
                 //-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-								
-				Thread.sleep(30000);               //Délai de 30 secondes pour laisser le temps d'envoyer la donnée
+				Thread.sleep(60000);               //Délai de 60 secondes pour laisser le temps d'envoyer la dernière donnée
                 //-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
                 //Ce bloc permet de de désactiver l'alimentation sur les ports USB                  //<- DÉBUT DU BLOC
@@ -241,10 +249,7 @@ class EnvoieInformations implements Runnable
 					BufferedReader brCommand3 = new BufferedReader(new InputStreamReader(p3.getErrorStream()));
 					System.out.println(brCommand3.readLine());
 					brCommand3.close();
-				}
-
-				Thread.sleep(100);      										                    //Delai pour laisser le temps au kernel d'agir
-                                                                                                    //<- FIN DU BLOC*/
+				}                                                                                   //<- FIN DU BLOC
             }
 
             catch (Exception e)
