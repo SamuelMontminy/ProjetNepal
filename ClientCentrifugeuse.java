@@ -390,7 +390,7 @@ class CalculeRPM implements Runnable				//Runnable puisque la classe contient un
 				
 				duree = Duration.between(start, end);		//La durée entre deux fronts montants (en millisecondes) est la durée entre start et end
 				MilliSecondes = duree.toMillis();
-				RPM = 60000 / (MilliSecondes - 300);			//Convertit le temps en millisecondes en RPM
+				RPM = 60000 / (MilliSecondes - 150);			//Convertit le temps en millisecondes en RPM
 
 				System.out.println("Tour en: " + String.valueOf(MilliSecondes) + "ms, RPM: " + String.valueOf(RPM));
 

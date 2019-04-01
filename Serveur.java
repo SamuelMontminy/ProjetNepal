@@ -12,9 +12,10 @@
  * Matériel: Raspberry Pi Zero W, Module LTE Hologram (+ carte SIM)
  */
 
-import java.net.*;
-import java.io.*;
-import java.util.regex.*;
+import java.net.*;              //Pour la communication par socket
+import java.io.*;               //Pour les gpio
+import java.util.regex.*;       //Pour l'analyse des trames des clients
+import java.nio.file.*;         //Pour enregistrer les trames dans un fichier
 
 public class Serveur implements Runnable
 {
@@ -54,7 +55,8 @@ public class Serveur implements Runnable
     public void run()
     {   
 		String Informations = "";                                               //Les données vont être reçues en string dans cette variable
-				
+        String json = "";
+
         while(m_tService != null)
         {
             try
@@ -97,23 +99,24 @@ public class Serveur implements Runnable
                 if (m.find( ))                  
                 {
                     //Affiche les valeurs trouvés dans les groupes du pattern regex. Chaque groupe correspond à la valeur d'un capteur (ID, T, P, H, R)
-                    System.out.println("Found value: " + m.group(1));
-                    System.out.println("Found value: " + m.group(2));
-                    System.out.println("Found value: " + m.group(3));
-                    System.out.println("Found value: " + m.group(4));
-                    System.out.println("Found value: " + m.group(5));
+                    System.out.println("ID: "          + m.group(1));
+                    System.out.println("Température: " + m.group(2));
+                    System.out.println("Pression: "    + m.group(3));
+                    System.out.println("Humidité: "    + m.group(4));
+                    System.out.println("RPM: "         + m.group(5));
 
-                    Informations = Informations + "," + java.time.LocalDateTime.now();
-                    System.out.println(Informations);
+                    //Ajoute la date comme sixième argument de la trame json
+                    json = "{ \"ID\":\"CE\", \"T\":\"0\", \"P\":\"0\", \"H\":\"0\", \"R\":\"" + m.group(5) + "\", \"D\":\"" + java.time.LocalDateTime.now() + "\" }";
+                    System.out.println(json);
+
+                    json += "\r";   //Pour ne pas que toutes les trames soient sur la même ligne dans le fichier
+                    Files.write(Paths.get("/home/pi/ProjetNepal/Data.txt"), json.toString().getBytes(), StandardOpenOption.CREATE, StandardOpenOption.APPEND);
                 }
                 
                 else
                 {
                     System.out.println("NO MATCH");
                 }
-
-                //MODIFIER INFORMATIONS POUR METTRE LA DATE/HEURE DEDANS
-                //ENREGISTRER INFORMATIONS DANS UN FICHIER .TXT
 			}
 
 			catch (Exception e)
