@@ -9,6 +9,7 @@
  *
  * @version 1.0 : Première version
  * @version 1.1 : Distinction entre les codes clients. Ce code sera seulement utilisé par la centrifugeuse (RPM)
+ * @version 1.2 : N'envoie pas une trame json au serveur.
  * Environnement de développement: GitKraken
  * Compilateur: javac (Java version 1.8)
  * Matériel: Raspberry Pi Zero W
@@ -314,7 +315,7 @@ public class ClientCentrifugeuse
             dos.write(value.getBytes(), 0, 1);                                                              //Écriture dans le fichier
                                                                                                             //(changera l'état du GPIO: 0 ==> niveau bas et différent de 0 niveau haut)
                                                                                                             
-            System.out.println("/sys/class/gpio/" + name_gpio + "/value = " + value);                       //Affiche l'action réalisée dans la console Java
+            //System.out.println("/sys/class/gpio/" + name_gpio + "/value = " + value);                       //Affiche l'action réalisée dans la console Java
             dos.close();                                                                                    //Fermeture du canal
             fos.close();                                                                                    //Fermeture du flux de données
         }
@@ -422,12 +423,12 @@ class CalculeRPM implements Runnable				//Runnable puisque la classe contient un
 					{
 						//ID (CE) = Centrifugeuse, T,P,H à 0 puisque nous nous en servons pas. C'est une structure de fichier json qui sera ensuite transformée en fichier csv par Hologram
 						//Cette string sera envoyée au serveur qui l'envoiera ensuite à Hologram, qui lui va l'envoyer à S3 puis à QuickSight en fichier csv
-						m_Parent.EnvoyerAuServeur(m_Parent.m_IP, m_Parent.m_Port, String.valueOf("\"{ \\\"ID\\\":\\\"CE\\\", \\\"T\\\":\\\"0\\\", \\\"P\\\":\\\"0\\\", \\\"H\\\":\\\"0\\\", \\\"R\\\":\\\"" + RPM + "\\\" }\""));
+						m_Parent.EnvoyerAuServeur(m_Parent.m_IP, m_Parent.m_Port, String.valueOf("CE,0,0,0," + RPM));
 					}
 
 					else					//Si l'usager tourne à moins qu'un tour au 20 secondes, on envoie 0 RPM (il est en train d'arrêter de tourner)
 					{
-						m_Parent.EnvoyerAuServeur(m_Parent.m_IP, m_Parent.m_Port, String.valueOf("\"{ \\\"ID\\\":\\\"CE\\\", \\\"T\\\":\\\"0\\\", \\\"P\\\":\\\"0\\\", \\\"H\\\":\\\"0\\\", \\\"R\\\":\\\"0\\\" }\""));
+						m_Parent.EnvoyerAuServeur(m_Parent.m_IP, m_Parent.m_Port, String.valueOf("CE,0,0,0,0"));
 					}
 				}
 
@@ -487,11 +488,11 @@ class Shutdown implements Runnable					//Runnable puisque la classe contient un 
 				if (m_Countdown == 0)														//Si aucun front montant n'à été détecté dans les deux dernières minutes
 				{
 					//Envoie trois 0 quand le Pi s'éteint pour pouvoir mieux visualiser dans les graphiques
-					m_Parent.EnvoyerAuServeur(m_Parent.m_IP, m_Parent.m_Port, String.valueOf("\"{ \\\"ID\\\":\\\"EC\\\", \\\"T\\\":\\\"0\\\", \\\"P\\\":\\\"0\\\", \\\"H\\\":\\\"0\\\", \\\"R\\\":\\\"0\\\" }\""));
+					m_Parent.EnvoyerAuServeur(m_Parent.m_IP, m_Parent.m_Port, String.valueOf("CE,0,0,0,0"));
 					Thread.sleep(10000);
-					m_Parent.EnvoyerAuServeur(m_Parent.m_IP, m_Parent.m_Port, String.valueOf("\"{ \\\"ID\\\":\\\"EC\\\", \\\"T\\\":\\\"0\\\", \\\"P\\\":\\\"0\\\", \\\"H\\\":\\\"0\\\", \\\"R\\\":\\\"0\\\" }\""));
+					m_Parent.EnvoyerAuServeur(m_Parent.m_IP, m_Parent.m_Port, String.valueOf("CE,0,0,0,0"));
 					Thread.sleep(10000);
-					m_Parent.EnvoyerAuServeur(m_Parent.m_IP, m_Parent.m_Port, String.valueOf("\"{ \\\"ID\\\":\\\"EC\\\", \\\"T\\\":\\\"0\\\", \\\"P\\\":\\\"0\\\", \\\"H\\\":\\\"0\\\", \\\"R\\\":\\\"0\\\" }\""));
+					m_Parent.EnvoyerAuServeur(m_Parent.m_IP, m_Parent.m_Port, String.valueOf("CE,0,0,0,0"));
 					Thread.sleep(10000);
 
 					m_Countdown--;															//Pour pas que la commande soit éxécutée plusieurs fois
@@ -514,7 +515,11 @@ class Shutdown implements Runnable					//Runnable puisque la classe contient un 
 				{
 					m_Countdown--;
 					Thread.sleep(1000);
-					System.out.println("Countdown: " + String.valueOf(m_Countdown));
+
+					if ((m_Countdown % 10 == 0) || (m_Countdown <= 10))
+					{
+						System.out.println("Countdown: " + String.valueOf(m_Countdown));
+					}
 				}
 			}
 			

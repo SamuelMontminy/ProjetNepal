@@ -23,7 +23,7 @@ public class Serveur implements Runnable
     ServerSocket m_ssServeur;                                       //Reference vers l'objet ServerSocket
     Thread m_tService;                                              //Reference vers l'objet Thread
 
-    String pattern = "^\"(\\w{2}),(\\d+\\.?(?:\\d+)?),(\\d+\\.?(?:\\d+)?),(\\d+\\.?(?:\\d+)?),(\\d+\\.?(?:\\d+)?)\"$";
+    String pattern = "^(\\w{2}),(\\d+\\.?(?:\\d+)?),(\\d+\\.?(?:\\d+)?),(\\d+\\.?(?:\\d+)?),(\\d+\\.?(?:\\d+)?)$";
 
     public EnvoieInformations m_objInformations;                    //Référence du thread qui sert à envoyer les informations
     
@@ -95,11 +95,11 @@ public class Serveur implements Runnable
 
                 if (m.find( ))
                 {
-                    System.out.println("Found value: " + m.group(0));
                     System.out.println("Found value: " + m.group(1));
                     System.out.println("Found value: " + m.group(2));
                     System.out.println("Found value: " + m.group(3));
                     System.out.println("Found value: " + m.group(4));
+                    System.out.println("Found value: " + m.group(5));
                 }
                 
                 else
@@ -152,7 +152,7 @@ class EnvoieInformations implements Runnable
         {
             try
             {
-                //Ce bloc permet de d'activer l'alimentation sur les ports USB                  //<- DÉBUT DU BLOC
+                /*//Ce bloc permet de d'activer l'alimentation sur les ports USB                  //<- DÉBUT DU BLOC
                 String s1 = "echo '1-1' |sudo tee /sys/bus/usb/drivers/usb/bind";    			//Commande bash a etre executee
 				String[] sCmd1 = {"/bin/bash", "-c", s1};             			                //Specifie que l'interpreteur de commandes est BASH. Le "-c" indique que la commande a executer suit
 
@@ -236,7 +236,7 @@ class EnvoieInformations implements Runnable
 				}
 
 				Thread.sleep(100);      										                    //Delai pour laisser le temps au kernel d'agir
-                                                                                                    //<- FIN DU BLOC
+                                                                                                    //<- FIN DU BLOC*/
             }
 
             catch (Exception e)
