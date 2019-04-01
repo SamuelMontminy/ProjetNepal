@@ -106,7 +106,7 @@ public class Serveur implements Runnable
                     System.out.println("RPM: "         + m.group(5));
 
                     //Ajoute la date comme sixième argument de la trame json
-                    json = "{ \"ID\":\"CE\", \"T\":\"0\", \"P\":\"0\", \"H\":\"0\", \"R\":\"" + m.group(5) + "\", \"D\":\"" + java.time.LocalDateTime.now() + "\" }";
+                    json = "{ \"ID\":\"" + m.group(1) + "\", \"T\":\"" + m.group(2) + "\", \"P\":\"" + m.group(3) + "\", \"H\":\"" + m.group(4) + "\", \"R\":\"" + m.group(5) + "\", \"D\":\"" + java.time.LocalDateTime.now() + "\" }";
                     System.out.println(json);
 
                     json += "\r";   //Pour ne pas que toutes les trames soient sur la même ligne dans le fichier
