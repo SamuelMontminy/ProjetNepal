@@ -23,6 +23,7 @@ public class Serveur implements Runnable
     ServerSocket m_ssServeur;                                       //Reference vers l'objet ServerSocket
     Thread m_tService;                                              //Reference vers l'objet Thread
 
+    //"Pattern" en Regex qui sert à vérifier si la trame reçue correspond à ce qu'on attend
     String pattern = "^(\\w{2}),(\\d+\\.?(?:\\d+)?),(\\d+\\.?(?:\\d+)?),(\\d+\\.?(?:\\d+)?),(\\d+\\.?(?:\\d+)?)$";
 
     public EnvoieInformations m_objInformations;                    //Référence du thread qui sert à envoyer les informations
@@ -90,16 +91,20 @@ public class Serveur implements Runnable
 			{
 				System.out.println(Informations + " -> à été reçu d'un client");
 				
-                Pattern r = Pattern.compile(pattern);
-                Matcher m = r.matcher(Informations);
+                Pattern r = Pattern.compile(pattern);           //Compile le "pattern" en Regex déclaré plus tôt
+                Matcher m = r.matcher(Informations);            //Crée un objet de type matcher, qui va permettre de comparer la trame que l'on reçoit avec le pattern
 
-                if (m.find( ))
+                if (m.find( ))                  
                 {
+                    //Affiche les valeurs trouvés dans les groupes du pattern regex. Chaque groupe correspond à la valeur d'un capteur (ID, T, P, H, R)
                     System.out.println("Found value: " + m.group(1));
                     System.out.println("Found value: " + m.group(2));
                     System.out.println("Found value: " + m.group(3));
                     System.out.println("Found value: " + m.group(4));
                     System.out.println("Found value: " + m.group(5));
+
+                    Informations = Informations + "," + java.time.LocalDateTime.now();
+                    System.out.println(Informations);
                 }
                 
                 else
