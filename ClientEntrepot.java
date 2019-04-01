@@ -21,21 +21,19 @@ import com.pi4j.io.i2c.I2CBus;
 import com.pi4j.io.i2c.I2CDevice;
 import com.pi4j.io.i2c.I2CFactory;
 
-
 public class ClientEntrepot
 {
+	public static final String NAME_GPIO = "gpio4";
     Socket m_sClient;           						//Référence de l'objet Socket
 	
-	String Temperature;
-	String Pression;
-	String Humidite;
-
 	public LectureCapteur m_objCapteur;					//Objet pour la classe pour la lecture du capteur
 	
 	String m_IP;										//Adresse du serveur
 	int m_Port;											//Port de communication avec le serveur
 	
-	
+	String Temperature;									//Variable contenant la température
+	String Pression;									//Variable contenant la pression
+	String Humidite;									//Variable contenant l'humidité
     
     public ClientEntrepot()
     {
@@ -48,15 +46,15 @@ public class ClientEntrepot
 		
 		try
 		{	
-			gpioUnexport("4");          						//Déffectation du GPIO #4 (au cas ou ce GPIO est déjè défini par un autre programme)
-			gpioExport("4");            						//Affectation du GPIO #4
-			gpioSetdir("gpio4", "in");   						//Place GPIO #4 en entrée
-
 			m_objCapteur = new LectureCapteur(this);	//Instancie l'objet de la classe LectureCapteur avec une référence vers la classe principale (ClientEntrepot)
 			
 			m_IP = sIP;									//Pour que les variables soient accessibles partout dans la classe
 			m_Port = nPort;
 			
+			gpioUnexport("4");          						//Déffectation du GPIO #5 (au cas ou ce GPIO est déjè défini par un autre programme)
+			gpioExport("4");            						//Affectation du GPIO #5
+			gpioSetdir("gpio4", "in");   						//Place GPIO #5 en sorti
+				
 			while (true)								//Rien dans la boucle infinie du main puisque le code de lecture du capteur roule dans un thread appart
 			{
 				if(gpioReadBit("gpio4") == 0)
@@ -141,7 +139,9 @@ public class ClientEntrepot
             System.out.println("Nombre d'arguments incorrect (IP + Port)");
         }
     }
-	public Integer gpioReadBit(String name_gpio)
+	//Pour lire l'état du GPIO
+	//Fonction faite par Pierre Bergeron (Modifiée par Samuel Montminy)
+    public Integer gpioReadBit(String name_gpio)
     {
         String sLecture;
 
@@ -167,14 +167,17 @@ public class ClientEntrepot
 		
         return new Integer(sLecture);  												//Retourne l'état "supposé" de la sortie
     }
-	public boolean gpioUnexport(String gpioid)   
+	
+	//Pour désaffecter le GPIO par kernel
+	//Fonction faite par Pierre Bergeron (Modifiée par Samuel Montminy)
+    public boolean gpioUnexport(String gpioid)   
     {  
         boolean bError = true;  													//Pour gestion des erreurs
 		
         try
         {
             String sCommande = "echo \"" + gpioid + "\">/sys/class/gpio/unexport";  //Commande bash à être exécutée
-            String[] sCmd = {"/bin/bash", "-c", sCommande};                       	//Spécifie que l'interpreteur de commandes est BASH. Le "-c" indique que la commande � ex�cuter suit
+            String[] sCmd = {"/bin/bash", "-c", sCommande};                       	//Spécifie que l'interpreteur de commandes est BASH. Le "-c" indique que la commande à exécuter suit
                                                                                     
             System.out.println(sCmd[0] + " " + sCmd[1] + " " + sCmd[2]);            //Affiche la commande à exécuter dans la console Java
             Process p = Runtime.getRuntime().exec(sCmd);                            //Exécute la commande par le système Linux (le programme Java
@@ -259,7 +262,7 @@ public class ClientEntrepot
             Process p = Runtime.getRuntime().exec(sCmd);                    	//Exécute la commande par le système Linux (le programme Java doit 
 																				//être démarré par le root pour les accès aux GPIO)
      
-            if (p.getErrorStream().available() > 0)        						//Vérification s'il y a une erreur d'exécution par l'interpreteur de commandes BASH
+            if(p.getErrorStream().available() > 0)        						//Vérification s'il y a une erreur d'exécution par l'interpreteur de commandes BASH
             {
                 //Affiche l'erreur survenue
                 bError = false;
@@ -281,41 +284,38 @@ public class ClientEntrepot
 	    }
 		
 		return bError;
-    }  
+    }
 
 	//Change l'état du GPIO
-	//name_gpio : nom associé au répertoire créé par le kernel (gpio +  no i/o du port : Ex: GPIO 2 ==> pgio2)
-	//value : état à placer sur la ligne
+    //name_gpio : nom associé au répertoire créé par le kernel (gpio +  no i/o du port : Ex: GPIO 2 ==> pgio2)
+    //value : état à placer sur la ligne
 	//Fonction faite par Pierre Bergeron (Modifiée par Samuel Montminy)
-	public Integer gpioSetBit(String name_gpio, String value)   
-	{       
-		try
-		{
-			FileOutputStream fos = new FileOutputStream("/sys/class/gpio/" + name_gpio + "/value");             //Sélection de la destination du flux de
-																											//données (sélection du fichier de sortie)
-																											
-			DataOutputStream dos = new DataOutputStream(fos);                                               //Canal vers le fichier (sortie en "streaming")
-			dos.write(value.getBytes(), 0, 1);                                                              //Écriture dans le fichier
-																											//(changera l'état du GPIO: 0 ==> niveau bas et différent de 0 niveau haut)
-																											
-			System.out.println("/sys/class/gpio/" + name_gpio + "/value = " + value);                        //Affiche l'action réalisée dans la console Java
-			dos.close();                                                                                    //Fermeture du canal
-			fos.close();                                                                                    //Fermeture du flux de données
-		}
+    public Integer gpioSetBit(String name_gpio, String value)   
+    {       
+        try
+        {
+            FileOutputStream fos = new FileOutputStream("/sys/class/gpio/" + name_gpio + "/value");         //Sélection de la destination du flux de
+                                                                                                            //données (sélection du fichier de sortie)
+                                                                                                            
+            DataOutputStream dos = new DataOutputStream(fos);                                               //Canal vers le fichier (sortie en "streaming")
+            dos.write(value.getBytes(), 0, 1);                                                              //Écriture dans le fichier
+                                                                                                            //(changera l'état du GPIO: 0 ==> niveau bas et différent de 0 niveau haut)
+                                                                                                            
+            System.out.println("/sys/class/gpio/" + name_gpio + "/value = " + value);                       //Affiche l'action réalisée dans la console Java
+            dos.close();                                                                                    //Fermeture du canal
+            fos.close();                                                                                    //Fermeture du flux de données
+        }
 		
-		catch(Exception e)																					//Affiche l'erreur survenue en Java
-		{
-			value = "-1";
-			System.out.println("Error on gpio setbits" + name_gpio + " :");
-			System.out.println(e.toString());
-		}
+        catch(Exception e)																					//Affiche l'erreur survenue en Java
+        {
+            value = "-1";
+            System.out.println("Error on gpio setbits" + name_gpio + " :");
+            System.out.println(e.toString());
+        }
 		
-		return new Integer(value);  																		//Retourne l'état "supposé" de la sortie
+        return new Integer(value);  																		//Retourne l'état "supposé" de la sortie
 	}
 }
-
-
-
 
 //Thread qui permet de calculer la vitesse de rotation en utilisant le temps entre chaque front montant
 class LectureCapteur implements Runnable				//Runnable puisque la classe contient un thread
@@ -503,6 +503,7 @@ class LectureCapteur implements Runnable				//Runnable puisque la classe contien
 		
 				pressure = pressure / 10;								//Pour avoir la pression en bars au lieu de deci-bars
 				
+				
 				m_Parent.Temperature = String.format("%1$.3f", cTemp);
 				m_Parent.Pression = String.format("%1$.3f", pressure);
 				m_Parent.Humidite = String.format("%1$.3f", humidity);
@@ -511,6 +512,7 @@ class LectureCapteur implements Runnable				//Runnable puisque la classe contien
 				//Cette string sera envoyée au serveur qui l'envoiera ensuite à Hologram, qui lui va l'envoyer à S3 puis à QuickSight en fichier csv
 				m_Parent.EnvoyerAuServeur(m_Parent.m_IP, m_Parent.m_Port, String.valueOf("\"{ \\\"ID\\\":\\\"EN\\\", \\\"T\\\":\\\"" + m_Parent.Temperature + "\\\", \\\"P\\\":\\\"" + m_Parent.Pression + "\\\", \\\"H\\\":\\\"" + m_Parent.Humidite + "\\\", \\\"R\\\":\\\"0\\\" }\""));
 				Thread.sleep(3525000);					//58.75 minutes
+				
 			}
 			
 			catch(Exception e)
