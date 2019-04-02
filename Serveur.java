@@ -375,7 +375,7 @@ class LectureCavalier implements Runnable
             {
                 if (m_Parent.gpioReadBit(m_Parent.NAME_GPIO) == 1)          //Mode debug (envoie les données directement par LTE quand elles sont reçues)
                 {
-                    if (m_Parent.ModeDebug == 0)                            //Pour que ça éxécute le code seulement une fois
+                    if (m_Parent.ModeDebug != 1)                            //Pour que ça éxécute le code seulement une fois
                     {
                         m_Parent.ModeDebug = 1;                             //Active le mode debug
                         System.out.println("Mode debug: on");
@@ -418,7 +418,7 @@ class LectureCavalier implements Runnable
 
                 else if (m_Parent.gpioReadBit(m_Parent.NAME_GPIO) == 0)     //Mode normal (accumule les données pendant un certain nombre de temps avant de les envoyer)
                 {
-                    if (m_Parent.ModeDebug == 1)                            //Pour que ça éxécute le code seulement une fois
+                    if (m_Parent.ModeDebug != 0)                            //Pour que ça éxécute le code seulement une fois
                     {
                         m_Parent.ModeDebug = 0;                             //Désactive le mode debug
                         System.out.println("Mode debug: off");
