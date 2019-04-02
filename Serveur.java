@@ -77,6 +77,7 @@ public class Serveur implements Runnable
             while(m_tService != null)
             {
 				Informations = "Erreur de lecture du client";                   //Permet de savoir si il y a eu une erreur de lecture du message (la variable va rester inchangée)
+                System.out.println("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
                 System.out.println("Attente d'une connexion au serveur...");    //Le miniserveur attend une connexion réseau... -> BLOQUANT! <-
                 Socket sConnexion = m_ssServeur.accept();
 
