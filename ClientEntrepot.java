@@ -7,6 +7,7 @@
  *
  * @version 1.0 : Première version
  * @version 1.1 : Distinction entre les codes clients. Ce code sera seulement utilisé par l'entrepot (BME280)
+ * @version 1.2 : N'envoie pas une trame json au serveur.
  * Environnement de développement: GitKraken
  * Compilateur: javac (Java version 1.8)
  * Matériel: Raspberry Pi Zero W
@@ -23,7 +24,6 @@ import com.pi4j.io.i2c.I2CFactory;
 
 public class ClientEntrepot
 {
-	public static final String NAME_GPIO = "gpio4";
     Socket m_sClient;           						//Référence de l'objet Socket
 	
 	public LectureCapteur m_objCapteur;					//Objet pour la classe pour la lecture du capteur
@@ -51,19 +51,20 @@ public class ClientEntrepot
 			m_IP = sIP;									//Pour que les variables soient accessibles partout dans la classe
 			m_Port = nPort;
 			
-			gpioUnexport("4");          						//Déffectation du GPIO #5 (au cas ou ce GPIO est déjè défini par un autre programme)
-			gpioExport("4");            						//Affectation du GPIO #5
-			gpioSetdir("gpio4", "in");   						//Place GPIO #5 en sorti
+			gpioUnexport("4");          				//Déffectation du GPIO #4 (au cas ou ce GPIO est déjè défini par un autre programme)
+			gpioExport("4");            				//Affectation du GPIO #4
+			gpioSetdir("gpio4", "in");   				//Place GPIO #4 en entrée
 				
 			while (true)								//Rien dans la boucle infinie du main puisque le code de lecture du capteur roule dans un thread appart
 			{
-				if(gpioReadBit("gpio4") == 0)
+				if (gpioReadBit("gpio4") == 0)
 				{
 					while(gpioReadBit("gpio4") == 0);
 					Thread.sleep(25); //Rebond
-					EnvoyerAuServeur(m_IP, m_Port, String.valueOf("\"{ \\\"ID\\\":\\\"EN\\\", \\\"T\\\":\\\"" + Temperature + "\\\", \\\"P\\\":\\\"" + Pression + "\\\", \\\"H\\\":\\\"" + Humidite + "\\\", \\\"R\\\":\\\"0\\\" }\""));
-					
+					EnvoyerAuServeur(m_IP, m_Port, String.valueOf("EN," + Temperature + "," + Pression + "," + Humidite + ",0"));
 				}
+
+				Thread.sleep(25); 
 			}
 		}
 		
@@ -301,7 +302,7 @@ public class ClientEntrepot
             dos.write(value.getBytes(), 0, 1);                                                              //Écriture dans le fichier
                                                                                                             //(changera l'état du GPIO: 0 ==> niveau bas et différent de 0 niveau haut)
                                                                                                             
-            System.out.println("/sys/class/gpio/" + name_gpio + "/value = " + value);                       //Affiche l'action réalisée dans la console Java
+            //System.out.println("/sys/class/gpio/" + name_gpio + "/value = " + value);                     //Affiche l'action réalisée dans la console Java
             dos.close();                                                                                    //Fermeture du canal
             fos.close();                                                                                    //Fermeture du flux de données
         }
@@ -503,16 +504,14 @@ class LectureCapteur implements Runnable				//Runnable puisque la classe contien
 		
 				pressure = pressure / 10;								//Pour avoir la pression en bars au lieu de deci-bars
 				
-				
 				m_Parent.Temperature = String.format("%1$.3f", cTemp);
 				m_Parent.Pression = String.format("%1$.3f", pressure);
 				m_Parent.Humidite = String.format("%1$.3f", humidity);
 				
 				//ID (EN) = Entrepot, R à 0 puisque nous nous en servons pas. C'est une structure de fichier json qui sera ensuite transformée en fichier csv par Hologram
 				//Cette string sera envoyée au serveur qui l'envoiera ensuite à Hologram, qui lui va l'envoyer à S3 puis à QuickSight en fichier csv
-				m_Parent.EnvoyerAuServeur(m_Parent.m_IP, m_Parent.m_Port, String.valueOf("\"{ \\\"ID\\\":\\\"EN\\\", \\\"T\\\":\\\"" + m_Parent.Temperature + "\\\", \\\"P\\\":\\\"" + m_Parent.Pression + "\\\", \\\"H\\\":\\\"" + m_Parent.Humidite + "\\\", \\\"R\\\":\\\"0\\\" }\""));
+				m_Parent.EnvoyerAuServeur(m_Parent.m_IP, m_Parent.m_Port, String.valueOf("EN," + m_Parent.Temperature + "," + m_Parent.Pression + "," + m_Parent.Humidite + ",0"));
 				Thread.sleep(3525000);					//58.75 minutes
-				
 			}
 			
 			catch(Exception e)
