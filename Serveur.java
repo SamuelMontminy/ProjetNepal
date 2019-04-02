@@ -367,6 +367,7 @@ class LectureCavalier implements Runnable
     {
         try
         {
+            Thread.sleep(5000);                     //Pour laisser le temps au code d'ouvrir
             m_Parent.gpioSetBit("gpio20", "1");     //Mets le gpio21 à 5V pour que nous puissons lire un niveau haut sur le gpio21 quand on est en mode debug
             Thread.sleep(150);                      //Laisser le temps à la pin de ce mettre à un niveau haut avant de faire une lecture
 
