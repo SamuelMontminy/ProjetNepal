@@ -47,6 +47,8 @@ public class Serveur implements Runnable
             m_objInformations = new EnvoieInformations(this);               //Démarre le thread qui sert à envoyer les informations
             m_objCavalier = new LectureCavalier(this);                      //Démarre le thread qui fait la lecture de la position du cavalier
 
+            System.out.println("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
+
             gpioUnexport("20");          						//Déffectation du GPIO #20 (au cas ou ce GPIO est déjè défini par un autre programme)
 			gpioExport("20");            						//Affectation du GPIO #20
 			gpioSetdir("gpio20", "out");   						//Place GPIO #20 en sortie (Pour agir comme un 5V pour la lecture du cavalier)
@@ -54,6 +56,8 @@ public class Serveur implements Runnable
             gpioUnexport("21");          						//Déffectation du GPIO #21 (au cas ou ce GPIO est déjè défini par un autre programme)
 			gpioExport("21");            						//Affectation du GPIO #21
 			gpioSetdir("gpio21", "in");   						//Place GPIO #21 en entrée (Lecture du cavalier pour le mode debug)
+
+            System.out.println("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
         }
         
         catch (IOException e)
@@ -112,6 +116,7 @@ public class Serveur implements Runnable
 
                     if (ModeDebug == 0)             //Accumule les données dans un fichier .txt
                     {
+                        //Spécifie dans quel fichier enregistrer la trame, CREATE pour créer le fichier s'il n'existe pas déja, APPEND pour ajouter l'information dans le fichier au lieu de l'écraser
                         Files.write(Paths.get("/home/pi/ProjetNepal/Data.txt"), json.toString().getBytes(), StandardOpenOption.CREATE, StandardOpenOption.APPEND);
                         System.out.println("Mode debug désactivé, " + json + " à été sauvegardé dans le fichier Data.txt");
                     }
@@ -370,7 +375,7 @@ class LectureCavalier implements Runnable
         {
             Thread.sleep(5000);                     //Pour laisser le temps au code d'ouvrir
             m_Parent.gpioSetBit("gpio20", "1");     //Mets le gpio21 à 5V pour que nous puissons lire un niveau haut sur le gpio21 quand on est en mode debug
-            Thread.sleep(150);                      //Laisser le temps à la pin de ce mettre à un niveau haut avant de faire une lecture
+            Thread.sleep(250);                      //Laisser le temps à la pin de ce mettre à un niveau haut avant de faire une lecture
 
             while (true)
             {
@@ -482,11 +487,13 @@ class EnvoieInformations implements Runnable
             {
                 //-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
                 Thread.sleep(2160000000L);   //6 heures  <- DÉLAI ENTRE CHAQUE ENVOI DE DONNÉES, le L spécifie que c'est un long sinon le nombre est trop grand pour un int
-                                             //2160000000=6H, 2880000000=8H, 4320000000=12H, 8640000000=24H
+                                             //2160000000L=6H, 2880000000L=8H, 4320000000L=12H, 8640000000L=24H
                 //-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
                 if (m_Parent.ModeDebug == 0)                                                        //Les données accumulées sont seulement envoyées si on est pas en mode debug
                 {
+                    System.out.println("Début de l'envoi du bloc de données");
+
                     //Ce bloc permet de d'activer l'alimentation sur les ports USB                  //<- DÉBUT DU BLOC
                     String s1 = "echo '1-1' |sudo tee /sys/bus/usb/drivers/usb/bind";    			//Commande bash a etre executee
                     String[] sCmd1 = {"/bin/bash", "-c", s1};             			                //Specifie que l'interpreteur de commandes est BASH. Le "-c" indique que la commande a executer suit
@@ -522,15 +529,16 @@ class EnvoieInformations implements Runnable
                     }                                                                               //<- FIN DU BLOC
 
                     //-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-                    Thread.sleep(60000);               //Délai de 60 secondes pour laisser le temps au modem d'avoir un signal LTE
+                    Thread.sleep(60000);               //Délai de 60 secondes pour laisser le temps au modem de se connecter au réseau
                     //-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
                     //Ce bloc éxécute la commande qui envoie les informations à Hologram            //<- DÉBUT DU BLOC
                     
-                    BufferedReader br = new BufferedReader(new FileReader("/home/pi/ProjetNepal/Data.txt"));
+                    BufferedReader br = new BufferedReader(new FileReader("/home/pi/ProjetNepal/Data.txt"));    //Fichier à partir duquel on lit les informations
 
                     while ((Donnee = br.readLine()) != null) 
                     {
+                        System.out.println("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
                         System.out.println(Donnee + " -> sera envoyé à Hologram");
 
                         String s2 = "sudo hologram send " + Donnee;    			                    //Commande bash a etre executee
@@ -548,18 +556,57 @@ class EnvoieInformations implements Runnable
                         }
 
                         System.out.println(Donnee + " -> à été envoyé à Hologram");
+                        System.out.println("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
 
                         Thread.sleep(60000);                                                        //1 minute entre chaque donnée
                     }
 
-                    br.close();                                                                     //<- FIN DU BLOC				                     
+                    br.close();                                                                     //<- FIN DU BLOC	
 
                     //-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-								
-                    Thread.sleep(60000);               //Délai de 60 secondes pour laisser le temps d'envoyer la dernière donnée
+                    Thread.sleep(30000);               //Délai de 30 secondes pour laisser le temps d'envoyer la dernière donnée
                     //-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
                     //Ce bloc permet de de désactiver l'alimentation sur les ports USB                  //<- DÉBUT DU BLOC
-                    String s3 = "echo '1-1' |sudo tee /sys/bus/usb/drivers/usb/unbind";    			    //Commande bash a etre executee
+                    String s6 = "echo '1-1' |sudo tee /sys/bus/usb/drivers/usb/unbind";    			    //Commande bash a etre executee
+                    String[] sCmd6 = {"/bin/bash", "-c", s6};             			                    //Specifie que l'interpreteur de commandes est BASH. Le "-c" indique que la commande a executer suit
+
+                    System.out.println(sCmd6[0] + " " + sCmd6[1] + " " + sCmd6[2]);                     //Affiche la commande a executer dans la console Java
+                    Process p6 = Runtime.getRuntime().exec(sCmd6);        			                    //Execute la commande par le systeme Linux (le programme Java doit etre demarré par le root pour les acces aux GPIO)
+
+                    if (p6.getErrorStream().available() > 0)        					                //Verification s'il y a une erreur d'execution par l'interpreteur de commandes BASH
+                    {
+                        //Affiche l'erreur survenue
+                        BufferedReader brCommand6 = new BufferedReader(new InputStreamReader(p6.getErrorStream()));
+                        System.out.println(brCommand6.readLine());
+                        brCommand6.close();
+                    }                                                                                   //<- FIN DU BLOC		                     
+
+                    //-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-								
+                    Thread.sleep(5000);               //Délai de 5 secondes avant de supprimer les données
+                    //-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+                    //Ce bloc permet de supprimer les données après qu'elles ont été envoyées           //<- DÉBUT DU BLOC
+                    String s5 = "rm /home/pi/ProjetNepal/Data.txt";    			                        //Commande bash a etre executee
+                    String[] sCmd5 = {"/bin/bash", "-c", s5};             			                    //Specifie que l'interpreteur de commandes est BASH. Le "-c" indique que la commande a executer suit
+
+                    System.out.println(sCmd5[0] + " " + sCmd5[1] + " " + sCmd5[2]);                     //Affiche la commande a executer dans la console Java
+                    Process p5 = Runtime.getRuntime().exec(sCmd5);        			                    //Execute la commande par le systeme Linux (le programme Java doit etre demarré par le root pour les acces aux GPIO)
+
+                    if (p5.getErrorStream().available() > 0)        					                //Verification s'il y a une erreur d'execution par l'interpreteur de commandes BASH
+                    {
+                        //Affiche l'erreur survenue
+                        BufferedReader brCommand5 = new BufferedReader(new InputStreamReader(p5.getErrorStream()));
+                        System.out.println(brCommand5.readLine());
+                        brCommand5.close();
+                    }                                                                                   //<- FIN DU BLOC
+
+                    //-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-								
+                    Thread.sleep(5000);               //Délai de 5 secondes avant de supprimer les données
+                    //-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+                    //Ce bloc permet de supprimer les données après qu'elles ont été envoyées           //<- DÉBUT DU BLOC
+                    String s3 = "touch /home/pi/ProjetNepal/Data.txt";    			                    //Commande bash a etre executee
                     String[] sCmd3 = {"/bin/bash", "-c", s3};             			                    //Specifie que l'interpreteur de commandes est BASH. Le "-c" indique que la commande a executer suit
 
                     System.out.println(sCmd3[0] + " " + sCmd3[1] + " " + sCmd3[2]);                     //Affiche la commande a executer dans la console Java
@@ -572,6 +619,8 @@ class EnvoieInformations implements Runnable
                         System.out.println(brCommand3.readLine());
                         brCommand3.close();
                     }                                                                                   //<- FIN DU BLOC
+
+                    System.out.println("Fin de l'envoi du bloc de données");
                 }
 
                 else if (m_Parent.ModeDebug == 1)
