@@ -109,10 +109,11 @@ public class Serveur implements Runnable
                     System.out.println("RPM: "         + m.group(5));
 
                     //Ajoute la date comme sixième argument de la trame json
-                    json = "{ \"ID\":\"" + m.group(1) + "\", \"T\":\"" + m.group(2) + "\", \"P\":\"" + m.group(3) + "\", \"H\":\"" + m.group(4) + "\", \"R\":\"" + m.group(5) + "\", \"D\":\"" + java.time.LocalDateTime.now() + "\" }";
+                    json = "{ \\\"ID\\\":\\\"" + m.group(1) + "\\\", \\\"T\\\":\\\"" + m.group(2) + "\\\", \\\"P\\\":\\\"" + m.group(3) + "\\\", \\\"H\\\":\\\"" + m.group(4) + "\\\", \\\"R\\\":\\\"" + m.group(5) + "\\\", \\\"D\\\":\\\"" + java.time.LocalDateTime.now() + "\\\" }";
                     System.out.println("Trame json crée: " + json);
 
-                    json += "\r";   //Pour ne pas que toutes les trames soient sur la même ligne dans le fichier
+                    json = "\"" + json + "\"";
+                    json += "\r";
 
                     if (ModeDebug == 0)             //Accumule les données dans un fichier .txt
                     {
@@ -481,6 +482,8 @@ class EnvoieInformations implements Runnable
 
     public void run()
     {
+        File file = new File("/home/pi/ProjetNepal/Data.txt");
+
         try
         {
             while (true)
@@ -490,7 +493,7 @@ class EnvoieInformations implements Runnable
                                              //2160000000L=6H, 2880000000L=8H, 4320000000L=12H, 8640000000L=24H
                 //-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-                if (m_Parent.ModeDebug == 0)                                                        //Les données accumulées sont seulement envoyées si on est pas en mode debug
+                if (m_Parent.ModeDebug == 0 && file.length() != 0)                                  //Les données accumulées sont seulement envoyées si on est pas en mode debug
                 {
                     System.out.println("Début de l'envoi du bloc de données");
 
@@ -534,7 +537,7 @@ class EnvoieInformations implements Runnable
 
                     //Ce bloc éxécute la commande qui envoie les informations à Hologram            //<- DÉBUT DU BLOC
                     
-                    BufferedReader br = new BufferedReader(new FileReader("/home/pi/ProjetNepal/Data.txt"));    //Fichier à partir duquel on lit les informations
+                    BufferedReader br = new BufferedReader(new FileReader(file));                   //Fichier à partir duquel on lit les informations
 
                     while ((Donnee = br.readLine()) != null) 
                     {
