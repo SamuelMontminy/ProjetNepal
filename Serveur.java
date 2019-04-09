@@ -490,7 +490,7 @@ class EnvoieInformations implements Runnable
             {
                 //-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
                 Thread.sleep(2160000000L);   //6 heures  <- DÉLAI ENTRE CHAQUE ENVOI DE DONNÉES, le L spécifie que c'est un long sinon le nombre est trop grand pour un int
-                                             //2160000000L=6H, 2880000000L=8H, 4320000000L=12H, 8640000000L=24H
+                                             //2160000000L=6H, 2880000000L=8H, 4320000000L=12H, 8640000000L=24H, 120000L=2M
                 //-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
                 if (m_Parent.ModeDebug == 0 && file.length() != 0)                                  //Les données accumulées sont seulement envoyées si on est pas en mode debug
@@ -590,7 +590,7 @@ class EnvoieInformations implements Runnable
                     //-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
                     //Ce bloc permet de supprimer les données après qu'elles ont été envoyées           //<- DÉBUT DU BLOC
-                    String s5 = "rm /home/pi/ProjetNepal/Data.txt";    			                        //Commande bash a etre executee
+                    String s5 = "sudo rm /home/pi/ProjetNepal/Data.txt";    			                //Commande bash a etre executee
                     String[] sCmd5 = {"/bin/bash", "-c", s5};             			                    //Specifie que l'interpreteur de commandes est BASH. Le "-c" indique que la commande a executer suit
 
                     System.out.println(sCmd5[0] + " " + sCmd5[1] + " " + sCmd5[2]);                     //Affiche la commande a executer dans la console Java
@@ -609,7 +609,7 @@ class EnvoieInformations implements Runnable
                     //-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
                     //Ce bloc permet de supprimer les données après qu'elles ont été envoyées           //<- DÉBUT DU BLOC
-                    String s3 = "touch /home/pi/ProjetNepal/Data.txt";    			                    //Commande bash a etre executee
+                    String s3 = "sudo touch /home/pi/ProjetNepal/Data.txt";    			                //Commande bash a etre executee
                     String[] sCmd3 = {"/bin/bash", "-c", s3};             			                    //Specifie que l'interpreteur de commandes est BASH. Le "-c" indique que la commande a executer suit
 
                     System.out.println(sCmd3[0] + " " + sCmd3[1] + " " + sCmd3[2]);                     //Affiche la commande a executer dans la console Java
