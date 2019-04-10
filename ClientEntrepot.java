@@ -502,8 +502,7 @@ class LectureCapteur implements Runnable				//Runnable puisque la classe contien
 				//FIN DU CODE TROUVÉ SUR INTERNET <---
 		
 				pressure = pressure / 10;								//Pour avoir la pression en bars au lieu de deci-bars
-				
-				
+					
 				m_Parent.Temperature = String.format("%1$.3f", cTemp);
 				m_Parent.Pression = String.format("%1$.3f", pressure);
 				m_Parent.Humidite = String.format("%1$.3f", humidity);
