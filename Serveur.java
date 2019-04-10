@@ -460,6 +460,24 @@ class LectureCavalier implements Runnable
 
 class EnvoieInformations implements Runnable
 {
+    private static final long TEMPS_5S = 5000;
+    private static final long TEMPS_30S = 30000;
+    private static final long TEMPS_1M = 60000;
+    private static final long TEMPS_1M30 = 90000;
+    private static final long TEMPS_2M = 120000;
+    private static final long TEMPS_10M = 600000;
+    private static final long TEMPS_20M = 1200000;
+    private static final long TEMPS_30M = 1800000;
+    private static final long TEMPS_45M = 2700000;
+
+    private static final long TEMPS_1H = 3600000;
+    private static final long TEMPS_2H = 7200000;
+    private static final long TEMPS_4H = 14400000;
+    private static final long TEMPS_6H = 21600000;
+    private static final long TEMPS_8H = 28800000;
+    private static final long TEMPS_12H = 43200000;
+    private static final long TEMPS_24H = 86400000;
+
     Thread m_Thread;
     private Serveur m_Parent;
     String Donnee = "";
@@ -489,8 +507,7 @@ class EnvoieInformations implements Runnable
             while (true)
             {
                 //-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-                Thread.sleep(2160000000L);   //6 heures  <- DÉLAI ENTRE CHAQUE ENVOI DE DONNÉES, le L spécifie que c'est un long sinon le nombre est trop grand pour un int
-                                             //2160000000L=6H, 2880000000L=8H, 4320000000L=12H, 8640000000L=24H, 120000L=2M
+                Thread.sleep(TEMPS_6H);                                                             //<- DÉLAI ENTRE CHAQUE ENVOI DE DONNÉES
                 //-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
                 if (m_Parent.ModeDebug == 0 && file.length() != 0)                                  //Les données accumulées sont seulement envoyées si on est pas en mode debug
@@ -513,7 +530,7 @@ class EnvoieInformations implements Runnable
                     }                                                                               //<-FIN DU BLOC
                                                                                                     
                     //-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-                    Thread.sleep(90000);               //Délai de 90 secondes pour laisser le temps au modem d'avoir un signal LTE
+                    Thread.sleep(TEMPS_1M30);              //Délai de 90 secondes pour laisser le temps au modem d'avoir un signal LTE
                     //-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
                     
                     //Bloc qui sert à faire un test de connection avant d'envoyer des données     	//<- DÉBUT DU BLOC
@@ -532,7 +549,7 @@ class EnvoieInformations implements Runnable
                     }                                                                               //<- FIN DU BLOC
 
                     //-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-                    Thread.sleep(60000);               //Délai de 60 secondes pour laisser le temps au modem de se connecter au réseau
+                    Thread.sleep(TEMPS_1M);               //Délai de 60 secondes pour laisser le temps au modem de se connecter au réseau
                     //-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
                     //Ce bloc éxécute la commande qui envoie les informations à Hologram            //<- DÉBUT DU BLOC
@@ -561,13 +578,13 @@ class EnvoieInformations implements Runnable
                         System.out.println(Donnee + " -> à été envoyé à Hologram");
                         System.out.println("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
 
-                        Thread.sleep(60000);                                                        //1 minute entre chaque donnée
+                        Thread.sleep(TEMPS_1M);                                                     //1 minute entre chaque donnée
                     }
 
                     br.close();                                                                     //<- FIN DU BLOC	
 
                     //-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-								
-                    Thread.sleep(30000);               //Délai de 30 secondes pour laisser le temps d'envoyer la dernière donnée
+                    Thread.sleep(TEMPS_30S);               //Délai de 30 secondes pour laisser le temps d'envoyer la dernière donnée
                     //-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
                     //Ce bloc permet de de désactiver l'alimentation sur les ports USB                  //<- DÉBUT DU BLOC
@@ -586,7 +603,7 @@ class EnvoieInformations implements Runnable
                     }                                                                                   //<- FIN DU BLOC		                     
 
                     //-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-								
-                    Thread.sleep(5000);               //Délai de 5 secondes avant de supprimer les données
+                    Thread.sleep(TEMPS_5S);               //Délai de 5 secondes avant de supprimer les données
                     //-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
                     //Ce bloc permet de supprimer les données après qu'elles ont été envoyées           //<- DÉBUT DU BLOC
@@ -605,7 +622,7 @@ class EnvoieInformations implements Runnable
                     }                                                                                   //<- FIN DU BLOC
 
                     //-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-								
-                    Thread.sleep(5000);               //Délai de 5 secondes avant de supprimer les données
+                    Thread.sleep(TEMPS_5S);               //Délai de 5 secondes avant de supprimer les données
                     //-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
                     //Ce bloc permet de supprimer les données après qu'elles ont été envoyées           //<- DÉBUT DU BLOC
