@@ -1,0 +1,18 @@
+#!/bin/bash
+# MyApp
+#
+# description: bla bla
+
+case $1 in
+    start)
+        /bin/bash /home/pi/ProjetNepal/ClientEcremeuse-start.sh
+    ;;
+    stop)
+        /bin/bash /home/pi/ProjetNepal/ClientEcremeuse-stop.sh
+    ;;
+    restart)
+        /bin/bash /home/pi/ProjetNepal/ClientEcremeuse-stop.sh
+        /bin/bash /home/pi/ProjetNepal/ClientEcremeuse-start.sh
+    ;;
+esac
+exit 0
