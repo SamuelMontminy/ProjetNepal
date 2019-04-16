@@ -105,11 +105,11 @@ arduino-cli upload -p /dev/ttyACM0 -v --fqbn arduino:samd:mkrgsm1400
 ### ![#f03c15](https://placehold.it/15/f03c15/000000?text=+) Codes
 ##### ClientCentrifugeuse.java, ClientEcremeuse.java & ClientEntrepot.java
 Ce sont les codes qui permettent de lire les capteurs et d'envoyer les informations au serveur (Serveur.java). Les codes de la Centrifugeuse et de l'Écrémeuse font éteindre le Pi après 120 secondes d'inactivité, et font allumer une del RGB selont la vitesse de rotation de la manivelle. Pour plus d'informations sur chaque code, regarder l'entête de fichiers de ceux-ci.
-Ces codes devraient se trouver dans un dossier facilement accessible, comme /home/pi/ProjetNepal par exemple.
+Ces codes doivent se trouver le dossier /home/pi/ProjetNepal.
 
 ##### Serveur.java
 Sert à recevoir les informations des codes client (ClientCentrifugeuse.java, ClientEcremeuse.java, ClientEntrepot.java) et les envoie par LTE à Hologram. Pour plus d'informations par rapport à ce code, regarder l'entête du fichier.
-Ce code devrait se trouver dans un dossier facilement accessible, comme /home/pi/ProjetNepal par exemple.
+Ce code doit se trouver le dossier /home/pi/ProjetNepal.
 
 ### ![#f03c15](https://placehold.it/15/f03c15/000000?text=+) Arduino
 
@@ -123,15 +123,15 @@ Ce fichier contient les certificats nécéssaire pour s'authentifier sur les ser
 
 ##### XXXXX-start.sh
 Ou "XXXXX" est différent pour chaque Pi. Par exemple, pour le serveur prendre le code Serveur-start.sh, et pour l'écrémeuse prendre le code ClientEcremeuse-start.sh. Ces fichiers servent à démarrer automatiquement les codes quand le Raspberry Pi démarre. 
-Ce fichier doit se trouver dans le même dossier que le code Java (par exemple /home/pi/ProjetNepal).
+Ce fichier doit se trouver dans le même dossier que le code Java (/home/pi/ProjetNepal).
 
 ##### XXXXX-stop.sh
 Ou "XXXXX" est différent pour chaque Pi. Par exemple, pour le serveur prendre le code Serveur-stop.sh, et pour l'écrémeuse prendre le code ClientEcremeuse-stop.sh. Ces fichiers servent à arrêter l'exécution automatique des code si on le désire. 
-Ce fichier doit se trouver dans le même dossier que le code Java (par exemple /home/pi/ProjetNepal).
+Ce fichier doit se trouver dans le même dossier que le code Java (/home/pi/ProjetNepal).
 
 ##### monScript
 Chaque Pi (Serveur, Écrémeuse, Centrifugeuse et Entrepot) à son fichier monScript respectif dans son dossier correspondant. Bien qu'ils sont similaires, ils sont différents donc il est important de prendre le bon pour chaque Pi. Ce fichier est appelé au démarrage du Pi, et sert à appeler les autres scripts pour l'éxécution automatique des codes.
-Ce fichier doit se trouver dans le dossier /etc/init.d
+Ce fichier doit se trouver dans le dossier /etc/init.d.
 
 ##### README.md
 Le fichier que vous lisez en ce moment, sert à afficher des informations pertinentes par rapport au projet.
