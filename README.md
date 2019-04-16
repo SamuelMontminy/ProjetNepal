@@ -124,7 +124,7 @@ pi4j -r ClientEcremeuse 192.168.4.1 2228
 Bien que ce fichier s'apelle Serveur-stop, il est (presque) identique à ceux qui se retrouvent sur tous les Pi. En effet, ce fichier sert à arrêter manuellement le code respectif de chaque Pi quand il est appelé. Il faut juste changer le nom du fichier et l'avant dernière commande de celui-ci par le Pi que nous voulons utiliser pour qu'il fonctionne. 
 Exemple: pour ClientEcremeuse, changer le nom du fichier pour ClientEcremeuse-stop.sh et changer l'avant dernière commande du fichier par 
 ```sh
-pid=`ps aux | grep Serveur | awk '{print $2}'`
+pid=`ps aux | grep ClientEcremeuse | awk '{print $2}'`
 ```
 
 ##### monScript
