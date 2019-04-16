@@ -26,7 +26,7 @@ sudo apt-get install oracle-java8-jdk
 ```
 
 ## Démarrer les codes sur les différents Raspberry Pi
-> Les différents codes s'éxécutent automatiquement dès l'alimentation des Pi. Pour arrêter les codes, nous devons se connecter en ssh, naviguer dans le dossier ou se trouve le script de démarrage avec la commande suivante
+Les différents codes s'éxécutent automatiquement dès l'alimentation des Pi. Si jamais on veut arrêter manuellement ceux-ci, nous devons se connecter en ssh, naviguer dans le dossier ou se trouve le script de démarrage avec la commande suivante
 ```sh
 cd /etc/init.d
 ```
