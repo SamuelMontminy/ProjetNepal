@@ -75,6 +75,7 @@ public class ClientEcremeuse
 			m_objShutdown = new Shutdown(this);					//Instancie l'objet de la classe Shutdown avec une référence vers la classe principale (ClientEcremeuse)
 			m_objCalculeRPM = new CalculeRPM(this);				//Instancie l'objet de la classe CalculeRPM avec une référence vers la classe principale (ClientEcremeuse)
 			m_objLectureCapteur = new LectureCapteur(this);		//Instancie l'objet de la classe LectureCapteur avec une référence vers la classe principale (ClientEcremeuse)
+			W1Master w1Master = new W1Master();					//Instancie l'objet de la classe w1Master avec une référence vers la classe principale (ClientEcremeuse)
 			
 			m_IP = sIP;											//Pour que les variables soient accessibles partout dans la classe
 			m_Port = nPort;
@@ -86,6 +87,32 @@ public class ClientEcremeuse
 					while(gpioReadBit("gpio2") == 0);
 					Thread.sleep(25); //Rebond
 					EnvoyerAuServeur(m_IP, m_Port, String.valueOf("EC," + Temperature + ",0,0,0"));					
+				}
+				
+				for (TemperatureSensor device : w1Master.getDevices(TemperatureSensor.class)) 
+				{
+					Temperature = device.getTemperature();
+				}
+				
+				if (Temperature < 20)
+				{
+					gpioSetBit("gpio13", "0"); 
+					gpioSetBit("gpio5", "1"); //Bleu
+					gpioSetBit("gpio6", "0");
+				}
+
+				else if(Temperature > 30)
+				{
+					gpioSetBit("gpio13", "1"); //Rouge
+					gpioSetBit("gpio5", "0");
+					gpioSetBit("gpio6", "0");
+				}
+
+				else
+				{
+					gpioSetBit("gpio13", "0"); 
+					gpioSetBit("gpio5", "0");
+					gpioSetBit("gpio6", "1"); //Vert
 				}
 				
 				Thread.sleep(25); 
@@ -410,7 +437,7 @@ class CalculeRPM implements Runnable				//Runnable puisque la classe contient un
 				RPM = 60000 / (MilliSecondes - 100);																		//Convertit le temps en millisecondes en RPM
 				System.out.println("Tour en: " + String.valueOf(MilliSecondes) + "ms, RPM: " + String.valueOf(RPM));
 				
-				if (RPM < 40)
+				/*if (RPM < 40)
 				{
 					m_Parent.gpioSetBit("gpio13", "0"); 
 					m_Parent.gpioSetBit("gpio5", "1"); //Bleu
@@ -429,7 +456,7 @@ class CalculeRPM implements Runnable				//Runnable puisque la classe contient un
 					m_Parent.gpioSetBit("gpio13", "0"); 
 					m_Parent.gpioSetBit("gpio5", "0");
 					m_Parent.gpioSetBit("gpio6", "1"); //Vert
-				}
+				}*/
 
 				if (EnvoieRPM == 10)									//Envoie seulement le RPM une fois sur 10
 				{
@@ -554,7 +581,7 @@ class LectureCapteur implements Runnable			//Runnable puisque la classe contient
 		
     private ClientEcremeuse m_Parent;				//Référence vers la classe principale (ClientEcremeuse)
 	
-	W1Master w1Master = new W1Master();				//Besoin pour le code trouvé sur internet		
+	//W1Master w1Master = new W1Master();				//Besoin pour le code trouvé sur internet		
 	
 	public LectureCapteur(ClientEcremeuse Parent)	//Constructeur
 	{
@@ -581,10 +608,10 @@ class LectureCapteur implements Runnable			//Runnable puisque la classe contient
 			{
 				//CODE TROUVÉ SUR INTERNET <--- Projet github: https://github.com/oksbwn/IOT_Raspberry_Pi/tree/master/src/in/weargenius
 				//Agis comme un for each --> met les elements de la classe température dans objet device
-				for (TemperatureSensor device : w1Master.getDevices(TemperatureSensor.class)) 
+				/*for (TemperatureSensor device : w1Master.getDevices(TemperatureSensor.class)) 
 				{
 					m_Parent.Temperature = device.getTemperature();
-				}
+				}*/
 				//FIN DU CODE TROUVÉ SUR INTERNET <---
 				
 				//ID (EC) = Écrémeuse, R,P,H à 0 puisque nous nous en servons pas. C'est une structure de fichier json qui sera ensuite transformée en fichier csv par Hologram
