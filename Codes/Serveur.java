@@ -504,12 +504,12 @@ class EnvoieInformations implements Runnable
 
         try
         {
+            //-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+            Thread.sleep(TEMPS_2M);                                                             //<- Avant d'envoyer le premier bloc de données
+            //-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
             while (true)
             {
-                //-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-                Thread.sleep(TEMPS_6H);                                                             //<- DÉLAI ENTRE CHAQUE ENVOI DE DONNÉES
-                //-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-
                 if (m_Parent.ModeDebug == 0 && file.length() != 0)                                  //Les données accumulées sont seulement envoyées si on est pas en mode debug
                 {
                     System.out.println("Début de l'envoi du bloc de données");
@@ -641,6 +641,10 @@ class EnvoieInformations implements Runnable
                     }                                                                                   //<- FIN DU BLOC
 
                     System.out.println("Fin de l'envoi du bloc de données");
+
+                     //-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+                    Thread.sleep(TEMPS_6H);                                                             //<- DÉLAI ENTRE CHAQUE ENVOI DE DONNÉES
+                    //-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
                 }
 
                 else if (m_Parent.ModeDebug == 1)
