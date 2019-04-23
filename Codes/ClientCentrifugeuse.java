@@ -26,11 +26,15 @@ public class ClientCentrifugeuse
 	
 	public Shutdown m_objShutdown;						//Objet pour la classe qui éteint le Pi après un délai d'inactivité
 	public CalculeRPM m_objCalculeRPM;					//Objet pour la classe qui calcule le RPM avec la reed switch branchée sur GPIO 3 et GND
+	public EnvoieMoyenne m_objMoyenne;					//Objet pour la classe qui envoie la moyenne de RPM pendant une minute
 
 	public static final String NAME_GPIO = "gpio3";     //Nom du GPIO pour le kernel Raspbian
 	
 	String m_IP;										//Adresse du serveur
 	int m_Port;											//Port de communication avec le serveur
+
+	long m_TotalRPM;									//Total de RPM pendant une minute (diviser par m_NbRPM pour avoir la moyenne en 1 min)
+	int m_NbRPM;										//Nombre de données de RPM accumulés pendant une minute (pour calculer la moyenne)
     
     public ClientCentrifugeuse()
     {
@@ -65,7 +69,8 @@ public class ClientCentrifugeuse
 			
 			m_objShutdown = new Shutdown(this);			//Instancie l'objet de la classe Shutdown avec une référence vers la classe principale (ClientCentrifugeuse)
 			m_objCalculeRPM = new CalculeRPM(this);		//Instancie l'objet de la classe CalculeRPM avec une référence vers la classe principale (ClientCentrifugeuse)
-			
+			m_objMoyenne = new EnvoieMoyenne(this);		//Instancie l'objet de la classe EnvoieMoyenne avec une référence vers la classe principale (ClientCentrifugeuse)
+
 			m_IP = sIP;									//Pour que les variables soient accessibles partout dans la classe
 			m_Port = nPort;
 			
@@ -343,7 +348,6 @@ public class ClientCentrifugeuse
 class CalculeRPM implements Runnable				//Runnable puisque la classe contient un thread
 {
 	long MilliSecondes;
-	int EnvoieRPM = 0;								//Pour ne pas congestionner le LTE, on va seulement envoyer le RPM une fois sur 10
 	
 	long RPM;
 
@@ -394,65 +398,105 @@ class CalculeRPM implements Runnable				//Runnable puisque la classe contient un
 				
 				end = Instant.now();
 				
-				Thread.sleep(100);									//Anti rebond 
+				Thread.sleep(100);							//Anti rebond 
 				
-				duree = Duration.between(start, end);				//La durée entre deux fronts montants (en millisecondes) est la durée entre start et end
+				duree = Duration.between(start, end);		//La durée entre deux fronts montants (en millisecondes) est la durée entre start et end
 				MilliSecondes = duree.toMillis();
 				RPM = 60000 / (MilliSecondes - 100);		//Convertit le temps en millisecondes en RPM
 
-				System.out.println("Tour en: " + String.valueOf(MilliSecondes) + "ms, RPM: " + String.valueOf(RPM));
-
-				if (RPM < 40)
+				if (RPM > 0 && RPM < 250)
 				{
-					m_Parent.gpioSetBit("gpio13", "0"); 
-					m_Parent.gpioSetBit("gpio5", "1"); //Bleu
-					m_Parent.gpioSetBit("gpio6", "0");
-				}
+					System.out.println("Tour en: " + String.valueOf(MilliSecondes) + "ms, RPM: " + String.valueOf(RPM));
 
-				else if(RPM > 50)
-				{
-					m_Parent.gpioSetBit("gpio13", "1"); //Rouge
-					m_Parent.gpioSetBit("gpio5", "0");
-					m_Parent.gpioSetBit("gpio6", "0");
-				}
-
-				else
-				{
-					m_Parent.gpioSetBit("gpio13", "0"); 
-					m_Parent.gpioSetBit("gpio5", "0");
-					m_Parent.gpioSetBit("gpio6", "1"); //Vert
-					
-				}
-
-				if (EnvoieRPM == 10)					//Envoie seulement le RPM une fois sur 10
-				{
-					EnvoieRPM = 0;
-
-					if ((RPM > 3) && (RPM < 250))		//Si l'usager arrête de tourner pendant plus de 20 secondes, on ne tiens pas compte de la donnée
+					if (RPM < 40)
 					{
-						//ID (CE) = Centrifugeuse, T,P,H à 0 puisque nous nous en servons pas. C'est une structure de fichier json qui sera ensuite transformée en fichier csv par Hologram
-						//Cette string sera envoyée au serveur qui l'envoiera ensuite à Hologram, qui lui va l'envoyer à S3 puis à QuickSight en fichier csv
-						m_Parent.EnvoyerAuServeur(m_Parent.m_IP, m_Parent.m_Port, String.valueOf("CE,0,0,0," + RPM));
+						m_Parent.gpioSetBit("gpio13", "0"); 
+						m_Parent.gpioSetBit("gpio5", "1"); //Bleu
+						m_Parent.gpioSetBit("gpio6", "0");
 					}
 
-					else					//Si l'usager tourne à moins qu'un tour au 20 secondes, on envoie 0 RPM (il est en train d'arrêter de tourner)
+					else if(RPM > 50)
 					{
-						m_Parent.EnvoyerAuServeur(m_Parent.m_IP, m_Parent.m_Port, String.valueOf("CE,0,0,0,0"));
+						m_Parent.gpioSetBit("gpio13", "1"); //Rouge
+						m_Parent.gpioSetBit("gpio5", "0");
+						m_Parent.gpioSetBit("gpio6", "0");
 					}
+
+					else
+					{
+						m_Parent.gpioSetBit("gpio13", "0"); 
+						m_Parent.gpioSetBit("gpio5", "0");
+						m_Parent.gpioSetBit("gpio6", "1"); //Vert
+					}
+
+					System.out.println("Tour en: " + String.valueOf(MilliSecondes) + "ms, RPM: " + String.valueOf(RPM));
+
+					m_Parent.m_TotalRPM += RPM;				//Additionne la nouvelle valeur de RPM calculée avec toutes les valeurs précédentes dans la minute
+					m_Parent.m_NbRPM++;						//Pour diviser m_TotalRPM pour avoir la moyenne de RPM par minute
 				}
 
-				else
-				{
-					EnvoieRPM++;
-				}
-
-				m_Parent.ResetCountdown();																				//Réinitialise le compteur d'inactivité
+				m_Parent.ResetCountdown();				//Réinitialise le compteur d'inactivité
 			}
 			
 			catch (Exception e)
 			{
 				System.out.println(e.toString());
 			}
+		}
+	}
+}
+
+//Thread qui permet d'envoyer la moyenne de RPM lu à chaque minute
+class EnvoieMoyenne implements Runnable
+{
+	Thread m_Thread;
+    private ClientCentrifugeuse m_Parent;				//Référence vers la classe principale (ClientCentrifugeuse)
+
+	public EnvoieMoyenne(ClientCentrifugeuse Parent)	//Constructeur
+	{
+		try
+		{
+			m_Parent = Parent;
+			
+			m_Thread = new Thread(this);				//Crée le thread
+			m_Thread.start();							//Démarre le thread
+		}
+
+		catch (Exception e)
+		{
+			System.out.println(e.toString());
+		}
+	}
+
+	public void run()
+	{
+		long MoyenneRPM;
+
+		try
+		{
+			while (true)
+			{
+				Thread.sleep(60000);				//Délai de 1 minute
+
+				if (m_Parent.m_NbRPM != 0)			//Pour éviter de diviser par 0 si il n'y a pas eu de RPM dans la dernière minute
+				{
+					System.out.println("Total: " + m_Parent.m_TotalRPM + " , Nombre: " + m_Parent.m_NbRPM);
+					MoyenneRPM = m_Parent.m_TotalRPM / m_Parent.m_NbRPM;
+					System.out.println("Moyenne 1min: " + MoyenneRPM);
+
+					//ID (CE) = Centrifugeuse, T,P,H à 0 puisque nous nous en servons pas. C'est une structure de fichier json qui sera ensuite transformée en fichier csv par Hologram
+					//Cette string sera envoyée au serveur qui l'envoiera ensuite à Hologram, qui lui va l'envoyer à S3 puis à QuickSight en fichier csv
+					m_Parent.EnvoyerAuServeur(m_Parent.m_IP, m_Parent.m_Port, String.valueOf("CE,0,0,0," + MoyenneRPM));
+
+					m_Parent.m_TotalRPM = 0;
+					m_Parent.m_NbRPM = 0;
+				}
+			}
+		}
+
+		catch (Exception e)
+		{
+			System.out.println(e.toString());
 		}
 	}
 }
@@ -504,7 +548,7 @@ class Shutdown implements Runnable					//Runnable puisque la classe contient un 
 					m_Parent.EnvoyerAuServeur(m_Parent.m_IP, m_Parent.m_Port, String.valueOf("CE,0,0,0,0"));
 					Thread.sleep(10000);
 
-					m_Countdown--;															//Pour pas que la commande soit éxécutée plusieurs fois
+					m_Countdown--;															//Pour pas que la commande soit éxécutée plusieurs fois (mets la variable à -1 donc on entre plus dans le if)
 					String sCommande = "shutdown now";  									//Commande bash à être exécutée
 					String[] sCmd = {"/bin/bash", "-c", sCommande};                       	//Spécifie que l'interpreteur de commandes est BASH. Le "-c" indique que la commande à exécuter suit
 																							

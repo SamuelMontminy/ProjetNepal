@@ -32,14 +32,18 @@ public class ClientEcremeuse
 	
 	public Shutdown m_objShutdown;						//Objet pour la classe qui éteint le Pi après un délai d'inactivité
 	public CalculeRPM m_objCalculeRPM;					//Objet pour la classe qui calcule le RPM avec la reed switch branchée sur GPIO 3 et GND
-	public LectureCapteur m_objLectureCapteur;			//Objet pour la classe de lecture du capteur de température (DS18B20)
+	public EnvoieMoyenne m_objMoyenne;					//Objet pour la classe qui envoie la moyenne de RPM pendant une minute
 
 	public static final String NAME_GPIO = "gpio3";     //Nom du GPIO pour le kernel Raspbian
 	
 	String m_IP;										//Adresse du serveur
 	int m_Port;											//Port de communication avec le serveur
 	
-	double Temperature;
+	long m_TotalRPM;									//Total de RPM pendant une minute (diviser par m_NbRPM pour avoir la moyenne en 1 min)
+	int m_NbRPM;										//Nombre de données de RPM accumulés pendant une minute (pour calculer la moyenne)
+	int Counter = 0;									//Compteur pour ne pas faire une lecture de la température à chaque boucle du main (1/5)
+
+	double m_Temperature;
     
     public ClientEcremeuse()
     {
@@ -74,7 +78,7 @@ public class ClientEcremeuse
 			
 			m_objShutdown = new Shutdown(this);					//Instancie l'objet de la classe Shutdown avec une référence vers la classe principale (ClientEcremeuse)
 			m_objCalculeRPM = new CalculeRPM(this);				//Instancie l'objet de la classe CalculeRPM avec une référence vers la classe principale (ClientEcremeuse)
-			m_objLectureCapteur = new LectureCapteur(this);		//Instancie l'objet de la classe LectureCapteur avec une référence vers la classe principale (ClientEcremeuse)
+			m_objMoyenne = new EnvoieMoyenne(this);				//Instancie l'objet de la classe EnvoieMoyenne avec une référence vers la classe principale (ClientEcremeuse)
 			W1Master w1Master = new W1Master();					//Instancie l'objet de la classe w1Master avec une référence vers la classe principale (ClientEcremeuse)
 			
 			m_IP = sIP;											//Pour que les variables soient accessibles partout dans la classe
@@ -86,36 +90,46 @@ public class ClientEcremeuse
 				{
 					while(gpioReadBit("gpio2") == 0);
 					Thread.sleep(25); //Rebond
-					EnvoyerAuServeur(m_IP, m_Port, String.valueOf("EC," + Temperature + ",0,0,0"));					
+					EnvoyerAuServeur(m_IP, m_Port, String.valueOf("EC," + m_Temperature + ",0,0,0"));					
 				}
 				
-				for (TemperatureSensor device : w1Master.getDevices(TemperatureSensor.class)) 
+				if (Counter == 5)
 				{
-					Temperature = device.getTemperature();
-				}
-				
-				if (Temperature < 20)
-				{
-					gpioSetBit("gpio13", "0"); 
-					gpioSetBit("gpio5", "1"); //Bleu
-					gpioSetBit("gpio6", "0");
-				}
+					Counter = 0;
+					
+					for (TemperatureSensor device : w1Master.getDevices(TemperatureSensor.class)) 
+					{
+						m_Temperature = device.getTemperature();
+					}
+					
+					if (m_Temperature < 20)
+					{
+						gpioSetBit("gpio13", "0"); 
+						gpioSetBit("gpio5", "1"); //Bleu
+						gpioSetBit("gpio6", "0");
+					}
 
-				else if(Temperature > 30)
-				{
-					gpioSetBit("gpio13", "1"); //Rouge
-					gpioSetBit("gpio5", "0");
-					gpioSetBit("gpio6", "0");
+					else if(m_Temperature > 30)
+					{
+						gpioSetBit("gpio13", "1"); //Rouge
+						gpioSetBit("gpio5", "0");
+						gpioSetBit("gpio6", "0");
+					}
+
+					else
+					{
+						gpioSetBit("gpio13", "0"); 
+						gpioSetBit("gpio5", "0");
+						gpioSetBit("gpio6", "1"); //Vert
+					}
+					
+					Thread.sleep(100); 
 				}
 
 				else
 				{
-					gpioSetBit("gpio13", "0"); 
-					gpioSetBit("gpio5", "0");
-					gpioSetBit("gpio6", "1"); //Vert
+					Counter++;
 				}
-				
-				Thread.sleep(25); 
 			}
 		}
 		
@@ -380,9 +394,9 @@ public class ClientEcremeuse
 class CalculeRPM implements Runnable				//Runnable puisque la classe contient un thread
 {
 	long MilliSecondes;
-	long RPM;
-	int EnvoieRPM = 0;								//Pour ne pas congestionner le LTE, on va seulement envoyer le RPM une fois sur 10
 	
+	long RPM;
+
 	Duration duree;
 	Instant start;
 	Instant end ;
@@ -434,59 +448,78 @@ class CalculeRPM implements Runnable				//Runnable puisque la classe contient un
 				
 				duree = Duration.between(start, end);		//La durée entre deux fronts montants (en millisecondes) est la durée entre start et end
 				MilliSecondes = duree.toMillis();
-				RPM = 60000 / (MilliSecondes - 100);																		//Convertit le temps en millisecondes en RPM
-				System.out.println("Tour en: " + String.valueOf(MilliSecondes) + "ms, RPM: " + String.valueOf(RPM));
-				
-				/*if (RPM < 40)
+				RPM = 60000 / (MilliSecondes - 100);		//Convertit le temps en millisecondes en RPM
+
+				if (RPM > 0 && RPM < 250)
 				{
-					m_Parent.gpioSetBit("gpio13", "0"); 
-					m_Parent.gpioSetBit("gpio5", "1"); //Bleu
-					m_Parent.gpioSetBit("gpio6", "0");
+					System.out.println("Tour en: " + String.valueOf(MilliSecondes) + "ms, RPM: " + String.valueOf(RPM));
+
+					m_Parent.m_TotalRPM += RPM;				//Additionne la nouvelle valeur de RPM calculée avec toutes les valeurs précédentes dans la minute
+					m_Parent.m_NbRPM++;						//Pour diviser m_TotalRPM pour avoir la moyenne de RPM par minute
 				}
 
-				else if(RPM > 50)
-				{
-					m_Parent.gpioSetBit("gpio13", "1"); //Rouge
-					m_Parent.gpioSetBit("gpio5", "0");
-					m_Parent.gpioSetBit("gpio6", "0");
-				}
-
-				else
-				{
-					m_Parent.gpioSetBit("gpio13", "0"); 
-					m_Parent.gpioSetBit("gpio5", "0");
-					m_Parent.gpioSetBit("gpio6", "1"); //Vert
-				}*/
-
-				if (EnvoieRPM == 10)									//Envoie seulement le RPM une fois sur 10
-				{
-					EnvoieRPM = 0;
-					
-					if ((RPM > 3) && (RPM < 250))						//Si l'usager tourne à plus de un tour au 20 secondes, on envoie la donnée réelle.
-					{
-						//ID (EC) = Écrémeuse, T,P,H à 0 puisque nous nous en servons pas. C'est une structure de fichier json qui sera ensuite transformée en fichier csv par Hologram
-						//Cette string sera envoyée au serveur qui l'envoiera ensuite à Hologram, qui lui va l'envoyer à S3 puis à QuickSight en fichier csv
-						m_Parent.EnvoyerAuServeur(m_Parent.m_IP, m_Parent.m_Port, String.valueOf("EC,0,0,0," + RPM));
-					}
-
-					else												//Si l'usager tourne à moins qu'un tour au 20 secondes, on envoie 0 RPM (il est en train d'arrêter de tourner)
-					{
-						m_Parent.EnvoyerAuServeur(m_Parent.m_IP, m_Parent.m_Port, String.valueOf("EC,0,0,0,0"));
-					}
-				}
-
-				else
-				{
-					EnvoieRPM++;
-				}
-
-				m_Parent.ResetCountdown();																			//Réinitialise le compteur d'inactivité
+				m_Parent.ResetCountdown();				//Réinitialise le compteur d'inactivité
 			}
 			
 			catch (Exception e)
 			{
 				System.out.println(e.toString());
 			}
+		}
+	}
+}
+
+//Thread qui permet d'envoyer la moyenne de RPM lu à chaque minute
+class EnvoieMoyenne implements Runnable
+{
+	Thread m_Thread;
+    private ClientEcremeuse m_Parent;				//Référence vers la classe principale (ClientEcremeuse)
+
+	public EnvoieMoyenne(ClientEcremeuse Parent)	//Constructeur
+	{
+		try
+		{
+			m_Parent = Parent;
+			
+			m_Thread = new Thread(this);				//Crée le thread
+			m_Thread.start();							//Démarre le thread
+		}
+
+		catch (Exception e)
+		{
+			System.out.println(e.toString());
+		}
+	}
+
+	public void run()
+	{
+		long MoyenneRPM;
+
+		try
+		{
+			while (true)
+			{
+				Thread.sleep(60000);				//Délai de 1 minute
+
+				if (m_Parent.m_NbRPM != 0)			//Pour éviter de diviser par 0 si il n'y a pas eu de RPM dans la dernière minute
+				{
+					System.out.println("Total: " + m_Parent.m_TotalRPM + " , Nombre: " + m_Parent.m_NbRPM);
+					MoyenneRPM = m_Parent.m_TotalRPM / m_Parent.m_NbRPM;
+					System.out.println("Moyenne 1min: " + MoyenneRPM);
+
+					//ID (CE) = Centrifugeuse, T,P,H à 0 puisque nous nous en servons pas. C'est une structure de fichier json qui sera ensuite transformée en fichier csv par Hologram
+					//Cette string sera envoyée au serveur qui l'envoiera ensuite à Hologram, qui lui va l'envoyer à S3 puis à QuickSight en fichier csv
+					m_Parent.EnvoyerAuServeur(m_Parent.m_IP, m_Parent.m_Port, String.valueOf("CE," + m_Parent.m_Temperature + ",0,0," + MoyenneRPM));
+
+					m_Parent.m_TotalRPM = 0;
+					m_Parent.m_NbRPM = 0;
+				}
+			}
+		}
+
+		catch (Exception e)
+		{
+			System.out.println(e.toString());
 		}
 	}
 }
@@ -564,60 +597,6 @@ class Shutdown implements Runnable					//Runnable puisque la classe contient un 
 						System.out.println("Countdown: " + String.valueOf(m_Countdown));
 					}
 				}
-			}
-			
-			catch (Exception e)
-			{
-				System.out.println(e.toString());
-			}
-		}
-	}
-}
-
-//Thread qui permet de lire le capteur OneWire DS18B20
-class LectureCapteur implements Runnable			//Runnable puisque la classe contient un thread
-{
-	Thread m_Thread;
-		
-    private ClientEcremeuse m_Parent;				//Référence vers la classe principale (ClientEcremeuse)
-	
-	//W1Master w1Master = new W1Master();				//Besoin pour le code trouvé sur internet		
-	
-	public LectureCapteur(ClientEcremeuse Parent)	//Constructeur
-	{
-		try
-		{
-			m_Parent = Parent;
-			
-			m_Thread = new Thread(this);			//Crée le thread
-			m_Thread.start();						//Démarre le thread
-			m_Parent.Temperature = 0;
-		}
-		
-		catch (Exception e)
-		{
-			System.out.println(e.toString());
-		}
-	}
-	
-	public void run()								//Thread qui roule en parallèle de la classe principale, fonction appelée automatiquement après le constructeur de la classe
-	{	
-		while (true)								//Boucle infinie sinon le thread se termine
-		{
-			try
-			{
-				//CODE TROUVÉ SUR INTERNET <--- Projet github: https://github.com/oksbwn/IOT_Raspberry_Pi/tree/master/src/in/weargenius
-				//Agis comme un for each --> met les elements de la classe température dans objet device
-				/*for (TemperatureSensor device : w1Master.getDevices(TemperatureSensor.class)) 
-				{
-					m_Parent.Temperature = device.getTemperature();
-				}*/
-				//FIN DU CODE TROUVÉ SUR INTERNET <---
-				
-				//ID (EC) = Écrémeuse, R,P,H à 0 puisque nous nous en servons pas. C'est une structure de fichier json qui sera ensuite transformée en fichier csv par Hologram
-				//Cette string sera envoyée au serveur qui l'envoiera ensuite à Hologram, qui lui va l'envoyer à S3 puis à QuickSight en fichier csv
-				m_Parent.EnvoyerAuServeur(m_Parent.m_IP, m_Parent.m_Port, String.valueOf("EC," + m_Parent.Temperature + ",0,0,0"));
-				Thread.sleep(90000);			//1 minute 30 secs
 			}
 			
 			catch (Exception e)
