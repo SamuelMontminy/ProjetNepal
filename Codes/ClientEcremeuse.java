@@ -429,22 +429,27 @@ class CalculeRPM implements Runnable				//Runnable puisque la classe contient un
 				while (m_Parent.gpioReadBit(m_Parent.NAME_GPIO) == 1)
 				{
 				}	//Détecte un front montant
-				Thread.sleep(250);							//Anti rebond
+				Thread.sleep(100);							//Anti rebond
 				
 				start = Instant.now();
 				
 				while (m_Parent.gpioReadBit(m_Parent.NAME_GPIO) == 0)
 				{
 				}	//Front descendant
-				Thread.sleep(250);							//Anti rebond
+				Thread.sleep(100);							//Anti rebond
 				
 				while (m_Parent.gpioReadBit(m_Parent.NAME_GPIO) == 1)
 				{
 				}	//Front montant
+				Thread.sleep(100);							//Anti rebond
+
+				while (m_Parent.gpioReadBit(m_Parent.NAME_GPIO) == 0)
+				{
+				}	//Front descendant
 				
 				end = Instant.now();
 				
-				Thread.sleep(250);							//Anti rebond 
+				Thread.sleep(100);							//Anti rebond 
 				
 				duree = Duration.between(start, end);		//La durée entre deux fronts montants (en millisecondes) est la durée entre start et end
 				MilliSecondes = duree.toMillis();
@@ -564,11 +569,11 @@ class Shutdown implements Runnable					//Runnable puisque la classe contient un 
 				if (m_Countdown == 0)														//Si aucun front montant n'à été détecté dans les deux dernières minutes
 				{
 					//Envoie trois 0 quand le Pi s'éteint pour pouvoir mieux visualiser dans les graphiques
-					m_Parent.EnvoyerAuServeur(m_Parent.m_IP, m_Parent.m_Port, String.valueOf("EC,0,0,0,0"));
+					m_Parent.EnvoyerAuServeur(m_Parent.m_IP, m_Parent.m_Port, String.valueOf("EC," + m_Parent.m_Temperature + ",0,0,0"));
 					Thread.sleep(10000);
-					m_Parent.EnvoyerAuServeur(m_Parent.m_IP, m_Parent.m_Port, String.valueOf("EC,0,0,0,0"));
+					m_Parent.EnvoyerAuServeur(m_Parent.m_IP, m_Parent.m_Port, String.valueOf("EC," + m_Parent.m_Temperature + ",0,0,0"));
 					Thread.sleep(10000);
-					m_Parent.EnvoyerAuServeur(m_Parent.m_IP, m_Parent.m_Port, String.valueOf("EC,0,0,0,0"));
+					m_Parent.EnvoyerAuServeur(m_Parent.m_IP, m_Parent.m_Port, String.valueOf("EC," + m_Parent.m_Temperature + ",0,0,0"));
 					Thread.sleep(10000);
 					
 					m_Countdown--;															//Pour ne pas que la commande soit éxécutée plusieurs fois
