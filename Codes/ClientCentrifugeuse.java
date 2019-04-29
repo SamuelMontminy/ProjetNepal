@@ -383,14 +383,14 @@ class CalculeRPM implements Runnable				//Runnable puisque la classe contient un
 				while (m_Parent.gpioReadBit(m_Parent.NAME_GPIO) == 1)
 				{
 				}	//Détecte un front montant
-				Thread.sleep(100);							//Anti rebond
+				Thread.sleep(250);							//Anti rebond
 				
 				start = Instant.now();
 				
 				while (m_Parent.gpioReadBit(m_Parent.NAME_GPIO) == 0)
 				{
 				}	//Front descendant
-				Thread.sleep(100);							//Anti rebond
+				Thread.sleep(250);							//Anti rebond
 				
 				while (m_Parent.gpioReadBit(m_Parent.NAME_GPIO) == 1)
 				{
@@ -398,24 +398,24 @@ class CalculeRPM implements Runnable				//Runnable puisque la classe contient un
 				
 				end = Instant.now();
 				
-				Thread.sleep(100);							//Anti rebond 
+				Thread.sleep(250);							//Anti rebond 
 				
 				duree = Duration.between(start, end);		//La durée entre deux fronts montants (en millisecondes) est la durée entre start et end
 				MilliSecondes = duree.toMillis();
-				RPM = 60000 / (MilliSecondes - 100);		//Convertit le temps en millisecondes en RPM
+				RPM = 60000 / (MilliSecondes - 250);		//Convertit le temps en millisecondes en RPM
 
 				if (RPM > 0 && RPM < 250)
 				{
 					System.out.println("Tour en: " + String.valueOf(MilliSecondes) + "ms, RPM: " + String.valueOf(RPM));
 
-					if (RPM < 40)
+					if (RPM < 55)
 					{
 						m_Parent.gpioSetBit("gpio13", "0"); 
 						m_Parent.gpioSetBit("gpio5", "1"); //Bleu
 						m_Parent.gpioSetBit("gpio6", "0");
 					}
 
-					else if(RPM > 50)
+					else if(RPM > 75)
 					{
 						m_Parent.gpioSetBit("gpio13", "1"); //Rouge
 						m_Parent.gpioSetBit("gpio5", "0");

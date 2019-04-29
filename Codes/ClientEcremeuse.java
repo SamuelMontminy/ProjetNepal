@@ -429,14 +429,14 @@ class CalculeRPM implements Runnable				//Runnable puisque la classe contient un
 				while (m_Parent.gpioReadBit(m_Parent.NAME_GPIO) == 1)
 				{
 				}	//Détecte un front montant
-				Thread.sleep(100);							//Anti rebond
+				Thread.sleep(250);							//Anti rebond
 				
 				start = Instant.now();
 				
 				while (m_Parent.gpioReadBit(m_Parent.NAME_GPIO) == 0)
 				{
 				}	//Front descendant
-				Thread.sleep(100);							//Anti rebond
+				Thread.sleep(250);							//Anti rebond
 				
 				while (m_Parent.gpioReadBit(m_Parent.NAME_GPIO) == 1)
 				{
@@ -444,11 +444,11 @@ class CalculeRPM implements Runnable				//Runnable puisque la classe contient un
 				
 				end = Instant.now();
 				
-				Thread.sleep(100);							//Anti rebond 
+				Thread.sleep(250);							//Anti rebond 
 				
 				duree = Duration.between(start, end);		//La durée entre deux fronts montants (en millisecondes) est la durée entre start et end
 				MilliSecondes = duree.toMillis();
-				RPM = 60000 / (MilliSecondes - 100);		//Convertit le temps en millisecondes en RPM
+				RPM = 60000 / (MilliSecondes - 200);		//Convertit le temps en millisecondes en RPM
 
 				if (RPM > 0 && RPM < 250)
 				{
