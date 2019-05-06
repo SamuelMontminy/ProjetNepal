@@ -514,7 +514,7 @@ class EnvoieMoyenne implements Runnable
 
 					//ID (CE) = Centrifugeuse, T,P,H à 0 puisque nous nous en servons pas. C'est une structure de fichier json qui sera ensuite transformée en fichier csv par Hologram
 					//Cette string sera envoyée au serveur qui l'envoiera ensuite à Hologram, qui lui va l'envoyer à S3 puis à QuickSight en fichier csv
-					m_Parent.EnvoyerAuServeur(m_Parent.m_IP, m_Parent.m_Port, String.valueOf("CE," + m_Parent.m_Temperature + ",0,0," + MoyenneRPM));
+					m_Parent.EnvoyerAuServeur(m_Parent.m_IP, m_Parent.m_Port, String.valueOf("EC," + m_Parent.m_Temperature + ",0,0," + MoyenneRPM));
 
 					m_Parent.m_TotalRPM = 0;
 					m_Parent.m_NbRPM = 0;
@@ -568,11 +568,7 @@ class Shutdown implements Runnable					//Runnable puisque la classe contient un 
 			{
 				if (m_Countdown == 0)														//Si aucun front montant n'à été détecté dans les deux dernières minutes
 				{
-					//Envoie trois 0 quand le Pi s'éteint pour pouvoir mieux visualiser dans les graphiques
-					m_Parent.EnvoyerAuServeur(m_Parent.m_IP, m_Parent.m_Port, String.valueOf("EC," + m_Parent.m_Temperature + ",0,0,0"));
-					Thread.sleep(10000);
-					m_Parent.EnvoyerAuServeur(m_Parent.m_IP, m_Parent.m_Port, String.valueOf("EC," + m_Parent.m_Temperature + ",0,0,0"));
-					Thread.sleep(10000);
+					//Envoie un 0 quand le Pi s'éteint pour pouvoir mieux visualiser dans les graphiques
 					m_Parent.EnvoyerAuServeur(m_Parent.m_IP, m_Parent.m_Port, String.valueOf("EC," + m_Parent.m_Temperature + ",0,0,0"));
 					Thread.sleep(10000);
 					

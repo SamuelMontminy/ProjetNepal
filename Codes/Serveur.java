@@ -20,13 +20,18 @@ import java.nio.file.*;         //Pour enregistrer les trames dans un fichier
 
 public class Serveur implements Runnable
 {
+    private static final long TEMPS_30S = 30000;
+
     final static int NB_OCTETS = 1000;                              //Constante pour le nombre d'octets du tampon memoire du miniserveur
     int m_nPort = 2228;                                             //Numéro du port utilise par le miniserveur (doit être entré comme argument lorsque les codes clients sont lancés)
     ServerSocket m_ssServeur;                                       //Reference vers l'objet ServerSocket
     Thread m_tService;                                              //Reference vers l'objet Thread
 
     //"Pattern" en Regex qui sert à vérifier si la trame reçue correspond à ce qu'on attend
-    String pattern = "^(\\w{2}),(\\d+\\.?(?:\\d+)?),(\\d+\\.?(?:\\d+)?),(\\d+\\.?(?:\\d+)?),(\\d+\\.?(?:\\d+)?)$";
+    String pattern1 = "^(\\w{2}),(\\d+\\.?(?:\\d+)?),(\\d+\\.?(?:\\d+)?),(\\d+\\.?(?:\\d+)?),(\\d+\\.?(?:\\d+)?)$";
+    String pattern2 = "^Location: \\{\"altitude\": \"(-?(?:\\d+)\\.?(?:\\d+)?)\", \"uncertainty\": \"(-?(?:\\d+)\\.?(?:\\d+)?)\", \"longitude\": \"(-?(?:\\d+)\\.?(?:\\d+)?)\", \"latitude\": \"(-?(?:\\d+)\\.?(?:\\d+)?)\", \"time\": \"(\\d+:\\d+:\\d+\\.\\d+)\", \"date\": \"(\\d+\\/\\d+\\/\\d+)\"\\}$";
+    String pattern3 = "^(\\d+):(\\d+):(\\d+)\\.(\\d+)$";
+    String pattern4 = "^(\\d+)/(\\d+)/(\\d+)$";
 
     public static final String NAME_GPIO = "gpio21";                //Nom du GPIO pour le kernel Raspbian
 
@@ -34,7 +39,8 @@ public class Serveur implements Runnable
     public LectureCavalier m_objCavalier;                           //Référence du thread qui sert si le cavalier est en mode debug
 
     int ModeDebug = 2;                                              //Mode debug = 1, Mode normal = 0, on le mets à 2 au début pour forcer la lecture du cavalier au démarrage                            
-    
+    public boolean TimeUpdated = false;
+
     public Serveur()
     {		
         try
@@ -73,12 +79,121 @@ public class Serveur implements Runnable
     //Tâche d'écoute sur le port 2228
     public void run()
     {   
-		String Informations = "";                                               //Les données vont être reçues en string dans cette variable
+		String Informations = "";                                                           //Les données vont être reçues en string dans cette variable
         String json = "";
+        String Temps = "";
+        String Date = "";
+        String retour7 = "Location: Not Available";
 
         try
         {
-            while(m_tService != null)
+            //Ce bloc permet de d'activer l'alimentation sur les ports USB                  //<- DÉBUT DU BLOC
+            String s8 = "echo '1-1' |sudo tee /sys/bus/usb/drivers/usb/bind";    			//Commande bash a etre executee
+            String[] sCmd8 = {"/bin/bash", "-c", s8};             			                //Specifie que l'interpreteur de commandes est BASH. Le "-c" indique que la commande a executer suit
+
+            System.out.println(sCmd8[0] + " " + sCmd8[1] + " " + sCmd8[2]);                 //Affiche la commande a executer dans la console Java
+            Process p8 = Runtime.getRuntime().exec(sCmd8);        			                //Execute la commande par le systeme Linux (le programme Java doit etre demarré par le root pour les acces aux GPIO)
+
+            if (p8.getErrorStream().available() > 0)        					            //Verification s'il y a une erreur d'execution par l'interpreteur de commandes BASH
+            {
+                //Affiche l'erreur survenue
+                BufferedReader brCommand8 = new BufferedReader(new InputStreamReader(p8.getErrorStream()));
+                System.out.println(brCommand8.readLine());
+                brCommand8.close();
+            }                                                                               //<-FIN DU BLOC
+
+            System.out.println("Début de l'acquisition de la date et de l'heure par 2G/3G...");
+
+            while (retour7.contains("Location: Not Available") == true)
+            {
+                //-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+                Thread.sleep(TEMPS_30S);                                                    //Réessaie la commande chaque 30 secondes
+                //-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+                String s7 = "sudo hologram modem location";    			                    //Commande bash a etre executee
+                String[] sCmd7 = {"/bin/bash", "-c", s7};             			            //Specifie que l'interpreteur de commandes est BASH. Le "-c" indique que la commande a executer suit
+
+                System.out.println(sCmd7[0] + " " + sCmd7[1] + " " + sCmd7[2]);             //Affiche la commande a executer dans la console Java
+                Process p7 = Runtime.getRuntime().exec(sCmd7);        			            //Execute la commande par le systeme Linux (le programme Java doit etre demarré par le root pour les acces aux GPIO)
+
+                p7.waitFor();                                                               //Attend que le "process" éxécuté soit terminé
+
+                BufferedReader reader1 = new BufferedReader(new InputStreamReader(p7.getInputStream()));
+                
+                retour7 = reader1.readLine();
+                System.out.println("Ligne trouvée: " + retour7);
+            }
+
+            System.out.println("Acquisition de la date et de l'heure réussie");
+
+            //Ce bloc permet de de désactiver l'alimentation sur les ports USB                  //<- DÉBUT DU BLOC
+            String s9 = "echo '1-1' |sudo tee /sys/bus/usb/drivers/usb/unbind";    			    //Commande bash a etre executee
+            String[] sCmd9 = {"/bin/bash", "-c", s9};             			                    //Specifie que l'interpreteur de commandes est BASH. Le "-c" indique que la commande a executer suit
+
+            System.out.println(sCmd9[0] + " " + sCmd9[1] + " " + sCmd9[2]);                     //Affiche la commande a executer dans la console Java
+            Process p9 = Runtime.getRuntime().exec(sCmd9);        			                    //Execute la commande par le systeme Linux (le programme Java doit etre demarré par le root pour les acces aux GPIO)
+
+            if (p9.getErrorStream().available() > 0)        					                //Verification s'il y a une erreur d'execution par l'interpreteur de commandes BASH
+            {
+                //Affiche l'erreur survenue
+                BufferedReader brCommand9 = new BufferedReader(new InputStreamReader(p9.getErrorStream()));
+                System.out.println(brCommand9.readLine());
+                brCommand9.close();
+            }                                                                                   //<- FIN DU BLOC	
+
+            Pattern r2 = Pattern.compile(pattern2);          //Compile le "pattern" en Regex déclaré plus tôt
+            Matcher m2 = r2.matcher(retour7);                //Crée un objet de type matcher, qui va permettre de comparer la trame que l'on reçoit avec le pattern
+            
+            if (m2.find( ))                                  //Regarde si la trame reçue correspond au "pattern"       
+            {
+                //Affiche les valeurs trouvés dans les groupes du pattern regex. Chaque groupe correspond à la valeur reçue de la commande location
+                System.out.println("Altitude: "      + m2.group(1));
+                System.out.println("Incertitude: "   + m2.group(2));
+                System.out.println("Longitude: "     + m2.group(3));
+                System.out.println("Latitude: "      + m2.group(4));
+                System.out.println("Temps: "         + m2.group(5));
+                System.out.println("Date: "          + m2.group(6));
+
+                String ATemps = m2.group(5);
+                String ADate = m2.group(6);
+
+                Pattern r3 = Pattern.compile(pattern3);
+                Matcher m3 = r3.matcher(ATemps);
+
+                if (m3.find( ))
+                {
+                    Temps = m3.group(1) + ":" + m3.group(2) + ":" + m3.group(3);
+                }
+
+                Pattern r4 = Pattern.compile(pattern4);
+                Matcher m4 = r4.matcher(ADate);
+
+                if (m4.find( ))
+                {
+                    Date = m4.group(3) + "-" + m4.group(2) + "-" + m4.group(1);
+                }
+
+                //Ce bloc permet de de mettre à jour l'heure du Pi                                  //<- DÉBUT DU BLOC
+                String s10 = "sudo timedatectl set-time \"" + Date + " " + Temps + "\"";    	    //Commande bash a etre executee
+                String[] sCmd10 = {"/bin/bash", "-c", s10};             			                //Specifie que l'interpreteur de commandes est BASH. Le "-c" indique que la commande a executer suit
+
+                System.out.println(sCmd10[0] + " " + sCmd10[1] + " " + sCmd10[2]);                  //Affiche la commande a executer dans la console Java
+                Process p10 = Runtime.getRuntime().exec(sCmd10);        			                //Execute la commande par le systeme Linux (le programme Java doit etre demarré par le root pour les acces aux GPIO)
+
+                p10.waitFor();                                                                      //Attend que le "process" éxécuté soit terminé
+                                    
+                if (p10.getErrorStream().available() > 0)        					                //Verification s'il y a une erreur d'execution par l'interpreteur de commandes BASH
+                {
+                    //Affiche l'erreur survenue
+                    BufferedReader brCommand10 = new BufferedReader(new InputStreamReader(p10.getErrorStream()));
+                    System.out.println(brCommand10.readLine());
+                    brCommand10.close();
+                }
+
+                TimeUpdated = true;                                                                 //<- FIN DU BLOC
+            }                                                                       	
+
+            while(m_tService != null)                                           //Boucle principale du thread d'écoute du socket TCP/IP
             {
 				Informations = "Erreur de lecture du client";                   //Permet de savoir si il y a eu une erreur de lecture du message (la variable va rester inchangée)
                 System.out.println("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
@@ -96,20 +211,20 @@ public class Serveur implements Runnable
 
                 System.out.println(Informations + " -> à été reçu d'un client");
             
-                Pattern r = Pattern.compile(pattern);           //Compile le "pattern" en Regex déclaré plus tôt
-                Matcher m = r.matcher(Informations);            //Crée un objet de type matcher, qui va permettre de comparer la trame que l'on reçoit avec le pattern
+                Pattern r1 = Pattern.compile(pattern1);          //Compile le "pattern" en Regex déclaré plus tôt
+                Matcher m1 = r1.matcher(Informations);            //Crée un objet de type matcher, qui va permettre de comparer la trame que l'on reçoit avec le pattern
 
-                if (m.find( ))                                  //Regarde si la trame reçue correspond au "pattern"       
+                if (m1.find( ))                                  //Regarde si la trame reçue correspond au "pattern"       
                 {
                     //Affiche les valeurs trouvés dans les groupes du pattern regex. Chaque groupe correspond à la valeur d'un capteur (ID, T, P, H, R)
-                    System.out.println("ID: "          + m.group(1));
-                    System.out.println("Température: " + m.group(2));
-                    System.out.println("Pression: "    + m.group(3));
-                    System.out.println("Humidité: "    + m.group(4));
-                    System.out.println("RPM: "         + m.group(5));
+                    System.out.println("ID: "          + m1.group(1));
+                    System.out.println("Température: " + m1.group(2));
+                    System.out.println("Pression: "    + m1.group(3));
+                    System.out.println("Humidité: "    + m1.group(4));
+                    System.out.println("RPM: "         + m1.group(5));
 
                     //Ajoute la date comme sixième argument de la trame json
-                    json = "{ \\\"ID\\\":\\\"" + m.group(1) + "\\\", \\\"T\\\":\\\"" + m.group(2) + "\\\", \\\"P\\\":\\\"" + m.group(3) + "\\\", \\\"H\\\":\\\"" + m.group(4) + "\\\", \\\"R\\\":\\\"" + m.group(5) + "\\\", \\\"D\\\":\\\"" + java.time.LocalDateTime.now() + "\\\" }";
+                    json = "{ \\\"ID\\\":\\\"" + m1.group(1) + "\\\", \\\"T\\\":\\\"" + m1.group(2) + "\\\", \\\"P\\\":\\\"" + m1.group(3) + "\\\", \\\"H\\\":\\\"" + m1.group(4) + "\\\", \\\"R\\\":\\\"" + m1.group(5) + "\\\", \\\"D\\\":\\\"" + java.time.LocalDateTime.now() + "\\\" }";
                     System.out.println("Trame json crée: " + json);
 
                     json = "\"" + json + "\"";
@@ -350,6 +465,9 @@ public class Serveur implements Runnable
 
 class LectureCavalier implements Runnable
 {
+    private static final long TEMPS_5S = 5000;
+    private static final long TEMPS_1M30 = 90000;
+
     Thread m_Thread;
     private Serveur m_Parent;
     int Memoire = 2;
@@ -374,7 +492,15 @@ class LectureCavalier implements Runnable
     {
         try
         {
-            Thread.sleep(5000);                     //Pour laisser le temps au code d'ouvrir
+            while (m_Parent.TimeUpdated == false)
+            {
+                Thread.sleep(100);
+            }
+
+            //-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+            Thread.sleep(TEMPS_5S);                 //Le temps que la classe principale crée le socket TCP/IP et écoute sur le port
+            //-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
             m_Parent.gpioSetBit("gpio20", "1");     //Mets le gpio21 à 5V pour que nous puissons lire un niveau haut sur le gpio21 quand on est en mode debug
             Thread.sleep(250);                      //Laisser le temps à la pin de ce mettre à un niveau haut avant de faire une lecture
 
@@ -403,7 +529,7 @@ class LectureCavalier implements Runnable
                         }                                                                               //<-FIN DU BLOC
                                                                                                         
                         //-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-                        Thread.sleep(90000);               //Délai de 90 secondes pour laisser le temps au modem d'avoir un signal LTE
+                        Thread.sleep(TEMPS_1M30);               //Délai de 90 secondes pour laisser le temps au modem d'avoir un signal LTE
                         //-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
                         
                         //Bloc qui sert à faire un test de connection avant d'envoyer des données     	//<- DÉBUT DU BLOC
@@ -447,7 +573,9 @@ class LectureCavalier implements Runnable
                     }
                 }
 
-                Thread.sleep(5000);
+                //-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+                Thread.sleep(TEMPS_5S);
+                //-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
             }
         }
 
@@ -465,6 +593,7 @@ class EnvoieInformations implements Runnable
     private static final long TEMPS_1M = 60000;
     private static final long TEMPS_1M30 = 90000;
     private static final long TEMPS_2M = 120000;
+    private static final long TEMPS_5M = 300000;
     private static final long TEMPS_10M = 600000;
     private static final long TEMPS_20M = 1200000;
     private static final long TEMPS_30M = 1800000;
@@ -481,6 +610,7 @@ class EnvoieInformations implements Runnable
     Thread m_Thread;
     private Serveur m_Parent;
     String Donnee = "";
+    boolean AfficheMessage = true;
 
     public EnvoieInformations(Serveur Parent)
     {
@@ -504,14 +634,20 @@ class EnvoieInformations implements Runnable
 
         try
         {
+            while (m_Parent.TimeUpdated == false)
+            {
+                Thread.sleep(100);
+            }
+
             //-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-            Thread.sleep(TEMPS_2M);                                                             //<- Avant d'envoyer le premier bloc de données
+            Thread.sleep(TEMPS_1M);                                                                //<- Avant d'envoyer le premier bloc de données
             //-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
             while (true)
             {
                 if (m_Parent.ModeDebug == 0 && file.length() != 0)                                  //Les données accumulées sont seulement envoyées si on est pas en mode debug
                 {
+                    AfficheMessage = true;
                     System.out.println("Début de l'envoi du bloc de données");
 
                     //Ce bloc permet de d'activer l'alimentation sur les ports USB                  //<- DÉBUT DU BLOC
@@ -642,14 +778,15 @@ class EnvoieInformations implements Runnable
 
                     System.out.println("Fin de l'envoi du bloc de données");
 
-                     //-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+                    //-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
                     Thread.sleep(TEMPS_6H);                                                             //<- DÉLAI ENTRE CHAQUE ENVOI DE DONNÉES
                     //-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
                 }
 
-                else if (m_Parent.ModeDebug == 1)
+                else if (m_Parent.ModeDebug == 1 && AfficheMessage == true)
                 {
                     System.out.println("Envoi de données annulé puisque le mode debug est activé");
+                    AfficheMessage = false;
                 }
             }
         }
