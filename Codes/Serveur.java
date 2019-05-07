@@ -46,13 +46,13 @@ public class Serveur implements Runnable
     {		
         try
         {
-            m_ssServeur = new ServerSocket(m_nPort, NB_OCTETS);             //Création du miniserveur au port specifie (m_nPort = 2228)
-                                                                            //Le miniserveur a un tampon mémoire de 1000 octets (NB_OCTETS)
-            m_tService = new Thread(this);                                  //Creation et démarrage de la tâche d'écoute du miniserveur sur le port 2228
+            m_ssServeur = new ServerSocket(m_nPort, NB_OCTETS);     //Création du miniserveur au port specifie (m_nPort = 2228)
+                                                                    //Le miniserveur a un tampon mémoire de 1000 octets (NB_OCTETS)
+            m_tService = new Thread(this);                          //Creation et démarrage de la tâche d'écoute du miniserveur sur le port 2228
             m_tService.start();
 
-            m_objInformations = new EnvoieInformations(this);               //Démarre le thread qui sert à envoyer les informations
-            m_objCavalier = new LectureCavalier(this);                      //Démarre le thread qui fait la lecture de la position du cavalier
+            m_objInformations = new EnvoieInformations(this);       //Démarre le thread qui sert à envoyer les informations
+            m_objCavalier = new LectureCavalier(this);              //Démarre le thread qui fait la lecture de la position du cavalier
 
             System.out.println("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
 
@@ -84,7 +84,7 @@ public class Serveur implements Runnable
         String json = "";                                                                   //La trame un coup qu'elle sera prête à être envoyée
         String Temps = "";                                                                  //Le temps reçu de "modem location" mais dans le bon format pour la commande "timedatectl"
         String Date = "";                                                                   //La date reçue de "modem location" mais dans le bon format pour la commande "timedatectl"
-        String retour7 = "Location: Not Available";
+        String retour7 = "";                                                                //Pour le retour de la commande/process 7 (modem location)
 
         try
         {
@@ -107,7 +107,7 @@ public class Serveur implements Runnable
 
             System.out.println("Début de l'acquisition de la date et de l'heure par 2G/3G...");
 
-            while (retour7.contains("Location: Not Available") == true)
+            while (retour7.contains("altitude") == false)                                   //Regarde si la commande à réussie (ne contient pas "altitude si elle échoue")
             {
                 //-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
                 Thread.sleep(TEMPS_30S);                                                    //Réessaie la commande chaque 30 secondes
@@ -119,32 +119,41 @@ public class Serveur implements Runnable
                 System.out.println(sCmd7[0] + " " + sCmd7[1] + " " + sCmd7[2]);             //Affiche la commande a executer dans la console Java
                 Process p7 = Runtime.getRuntime().exec(sCmd7);        			            //Execute la commande par le systeme Linux (le programme Java doit etre demarré par le root pour les acces aux GPIO)
 
-                p7.waitFor();                                                               //Attend que la commande soit éxécutée soit terminée
+                //p7.waitFor();                                                               //Attend que la commande soit éxécutée soit terminée
 
                 BufferedReader reader1 = new BufferedReader(new InputStreamReader(p7.getInputStream()));        //Objet pour la lecture du retour
                 
                 retour7 = reader1.readLine();                                               //Lis ce que la commande retourne dans le terminal
-                System.out.println("Ligne trouvée: " + retour7);
+                
+                if (retour7 == null)
+                {
+                    retour7 = "";
+                }
+
+                else
+                {
+                    System.out.println("Ligne trouvée: " + retour7);
+                }
             }
 
             System.out.println("Acquisition de la date et de l'heure réussie");
 
-            //Ce bloc permet de de désactiver l'alimentation sur les ports USB                  //<- DÉBUT DU BLOC
-            String s9 = "echo '1-1' |sudo tee /sys/bus/usb/drivers/usb/unbind";    			    //Commande bash a etre executee
-            String[] sCmd9 = {"/bin/bash", "-c", s9};             			                    //Specifie que l'interpreteur de commandes est BASH. Le "-c" indique que la commande a executer suit
+            //Ce bloc permet de de désactiver l'alimentation sur les ports USB              //<- DÉBUT DU BLOC
+            String s9 = "echo '1-1' |sudo tee /sys/bus/usb/drivers/usb/unbind";    			//Commande bash a etre executee
+            String[] sCmd9 = {"/bin/bash", "-c", s9};             			                //Specifie que l'interpreteur de commandes est BASH. Le "-c" indique que la commande a executer suit
 
-            System.out.println(sCmd9[0] + " " + sCmd9[1] + " " + sCmd9[2]);                     //Affiche la commande a executer dans la console Java
-            Process p9 = Runtime.getRuntime().exec(sCmd9);        			                    //Execute la commande par le systeme Linux (le programme Java doit etre demarré par le root pour les acces aux GPIO)
+            System.out.println(sCmd9[0] + " " + sCmd9[1] + " " + sCmd9[2]);                 //Affiche la commande a executer dans la console Java
+            Process p9 = Runtime.getRuntime().exec(sCmd9);        			                //Execute la commande par le systeme Linux (le programme Java doit etre demarré par le root pour les acces aux GPIO)
 
-            p9.waitFor();                                                                       //Attend que la commande soit éxécutée soit terminée
+            p9.waitFor();                                                                   //Attend que la commande soit éxécutée soit terminée
 
-            if (p9.getErrorStream().available() > 0)        					                //Verification s'il y a une erreur d'execution par l'interpreteur de commandes BASH
+            if (p9.getErrorStream().available() > 0)        					            //Verification s'il y a une erreur d'execution par l'interpreteur de commandes BASH
             {
                 //Affiche l'erreur survenue
                 BufferedReader brCommand9 = new BufferedReader(new InputStreamReader(p9.getErrorStream()));
                 System.out.println(brCommand9.readLine());
                 brCommand9.close();
-            }                                                                                   //<- FIN DU BLOC	
+            }                                                                               //<- FIN DU BLOC	
 
             Pattern r2 = Pattern.compile(Pattern_Location);          //Compile le "pattern" en Regex déclaré plus tôt (pour voir s'il y a des erreurs)
             Matcher m2 = r2.matcher(retour7);                        //Crée un objet de type matcher, qui va permettre de comparer la trame que l'on reçoit avec le pattern défini
@@ -477,7 +486,6 @@ class LectureCavalier implements Runnable
 
     Thread m_Thread;
     private Serveur m_Parent;
-    int Memoire = 2;
 
     public LectureCavalier(Serveur Parent)
     {
@@ -637,7 +645,9 @@ class EnvoieInformations implements Runnable
 
     public void run()
     {
-        File file = new File("/home/pi/ProjetNepal/Data.txt");
+        File file = new File("/home/pi/ProjetNepal/Data.txt");      //Fichier dans lequel les trames seront enregistrées
+        String retour4 = "";        //Pour le retour de la commande/process 4 (Connection au réseau 2G/3G)
+        String retour2 = "";        //Pour le retour de la commande/process 2 (Envoi d'une donnée)
 
         try
         {
@@ -655,6 +665,7 @@ class EnvoieInformations implements Runnable
                 if (m_Parent.ModeDebug == 0 && file.length() != 0)                                  //Les données accumulées sont seulement envoyées si on est pas en mode debug
                 {
                     AfficheMessage = true;
+
                     System.out.println("Début de l'envoi du bloc de données");
 
                     //Ce bloc permet de d'activer l'alimentation sur les ports USB                  //<- DÉBUT DU BLOC
@@ -674,31 +685,37 @@ class EnvoieInformations implements Runnable
                         brCommand1.close();
                     }                                                                               //<-FIN DU BLOC
                                                                                                     
-                    //-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-                    Thread.sleep(TEMPS_1M30);              //Délai de 90 secondes pour laisser le temps au modem d'avoir un signal LTE
-                    //-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-                    
-                    //Bloc qui sert à faire un test de connection avant d'envoyer des données     	//<- DÉBUT DU BLOC
-                    String s4 = "sudo hologram network connect";    			    	            //Commande bash a etre executee
-                    String[] sCmd4 = {"/bin/bash", "-c", s4};             			                //Specifie que l'interpreteur de commandes est BASH. Le "-c" indique que la commande a executer suit
-
-                    System.out.println(sCmd4[0] + " " + sCmd4[1] + " " + sCmd4[2]);                 //Affiche la commande a executer dans la console Java
-                    Process p4 = Runtime.getRuntime().exec(sCmd4);        			                //Execute la commande par le systeme Linux (le programme Java doit etre demarré par le root pour les acces aux GPIO)
-
-                    p4.waitFor();                                                                   //Attend que la commande soit éxécutée soit terminée
-
-                    if (p4.getErrorStream().available() > 0)        					            //Verification s'il y a une erreur d'execution par l'interpreteur de commandes BASH
+                    //Bloc qui sert à faire un test de connection avant d'envoyer des données     	    //<- DÉBUT DU BLOC
+                    while (retour4.contains("PPP session started") == false)
                     {
-                        //Affiche l'erreur survenue
-                        BufferedReader brCommand4 = new BufferedReader(new InputStreamReader(p4.getErrorStream()));
-                        System.out.println(brCommand4.readLine());
-                        brCommand4.close();
-                    }                                                                               //<- FIN DU BLOC
+                        //-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+                        Thread.sleep(TEMPS_30S);        //Réessaie à chaque 30 secondes
+                        //-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-                    //-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-                    Thread.sleep(TEMPS_1M);               //Délai de 60 secondes pour laisser le temps au modem de se connecter au réseau
-                    //REMPLACER LE DÉLAI PAR VOIR SI SA AFFICHE "PPP SESSION STARTED" DANS LE TERMINAL
-                    //-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+                        String s4 = "sudo hologram network connect";    			    	            //Commande bash a etre executee
+                        String[] sCmd4 = {"/bin/bash", "-c", s4};             			                //Specifie que l'interpreteur de commandes est BASH. Le "-c" indique que la commande a executer suit
+
+                        System.out.println(sCmd4[0] + " " + sCmd4[1] + " " + sCmd4[2]);                 //Affiche la commande a executer dans la console Java
+                        Process p4 = Runtime.getRuntime().exec(sCmd4);        			                //Execute la commande par le systeme Linux (le programme Java doit etre demarré par le root pour les acces aux GPIO)
+
+                        p4.waitFor();                                                                   //Attend que la commande soit éxécutée soit terminée                                                                   
+
+                        BufferedReader reader2 = new BufferedReader(new InputStreamReader(p4.getInputStream()));        //Objet pour la lecture du retour
+                    
+                        retour4 = reader2.readLine();                                                   //Lis ce que la commande retourne dans le terminal
+                        
+                        if (retour4 == null)
+                        {
+                            retour4 = "";
+                        }
+
+                        else
+                        {
+                            System.out.println("Ligne trouvée: " + retour4);                                //<- FIN DU BLOC
+                        }
+                    }
+
+                    System.out.println("Connection au réseau 2G/3G réussie, début de l'envoi du bloc de données");
 
                     //Ce bloc éxécute la commande qui envoie les informations à Hologram            //<- DÉBUT DU BLOC
                     
@@ -709,30 +726,41 @@ class EnvoieInformations implements Runnable
                         System.out.println("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
                         System.out.println(Donnee + " -> sera envoyé à Hologram");
 
-                        String s2 = "sudo hologram send " + Donnee;    			                    //Commande bash a etre executee
-                        String[] sCmd2 = {"/bin/bash", "-c", s2};             			            //Specifie que l'interpreteur de commandes est BASH. Le "-c" indique que la commande a executer suit
-
-                        System.out.println(sCmd2[0] + " " + sCmd2[1] + " " + sCmd2[2]);             //Affiche la commande a executer dans la console Java
-                        Process p2 = Runtime.getRuntime().exec(sCmd2);        			            //Execute la commande par le systeme Linux (le programme Java doit etre demarré par le root pour les acces aux GPIO)
-
-                        p2.waitFor();                                                               //Attend que la commande soit éxécutée soit terminée
-
-                        if (p2.getErrorStream().available() > 0)        					        //Verification s'il y a une erreur d'execution par l'interpreteur de commandes BASH
+                        while (retour2.contains("Message sent successfully") == false)
                         {
-                            //Affiche l'erreur survenue
-                            BufferedReader brCommand2 = new BufferedReader(new InputStreamReader(p2.getErrorStream()));
-                            System.out.println(brCommand2.readLine());
-                            brCommand2.close();
+                            //-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+                            Thread.sleep(TEMPS_30S);        //Réessaie à chaque 30 secondes
+                            //-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+                            String s2 = "sudo hologram send " + Donnee;    			                    //Commande bash a etre executee
+                            String[] sCmd2 = {"/bin/bash", "-c", s2};             			            //Specifie que l'interpreteur de commandes est BASH. Le "-c" indique que la commande a executer suit
+
+                            System.out.println(sCmd2[0] + " " + sCmd2[1] + " " + sCmd2[2]);             //Affiche la commande a executer dans la console Java
+                            Process p2 = Runtime.getRuntime().exec(sCmd2);        			            //Execute la commande par le systeme Linux (le programme Java doit etre demarré par le root pour les acces aux GPIO)
+
+                            p2.waitFor();                                                               //Attend que la commande soit éxécutée soit terminée
+                        
+                            BufferedReader reader3 = new BufferedReader(new InputStreamReader(p2.getInputStream()));        //Objet pour la lecture du retour
+
+                            retour2 = reader3.readLine();                                               //Lis ce que la commande retourne dans le terminal
+                            
+                            if (retour2 == null)
+                            {
+                                retour2 = "";
+                            }
+
+                            else
+                            {
+                                System.out.println("Ligne trouvée: " + retour2);
+                            }
                         }
 
+                        retour2 = "";
                         System.out.println(Donnee + " -> à été envoyé à Hologram");
                         System.out.println("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
-
-                        Thread.sleep(TEMPS_1M);                                                     //1 minute entre chaque donnée
-                        //REMPLACER LE DÉLAI PAR VOIR SI SA AFFICHE "MESSAGE SENT SUCCESSFULLY" DANS LE TERMINAL
                     }
 
-                    br.close();                                                                     //<- FIN DU BLOC	
+                    br.close();                                                                         //<- FIN DU BLOC	
 
                     //Ce bloc permet de de désactiver l'alimentation sur les ports USB                  //<- DÉBUT DU BLOC
                     String s6 = "echo '1-1' |sudo tee /sys/bus/usb/drivers/usb/unbind";    			    //Commande bash a etre executee
