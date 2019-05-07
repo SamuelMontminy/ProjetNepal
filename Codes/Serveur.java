@@ -8,6 +8,7 @@
  * @version 1.0 : Première version
  * @version 1.1 : Enregistre les données dans le système avant de les envoyer une fois par jour pour sauver du courant.
  * @version 1.2 : Un cavalier permet de décider si on est en mode debug ou normal. Le mode debug envoie directement les données par LTE quand elles sont reçues
+ * @version 1.3 : Le Pi mets à jour son heure interne au démarrage par 2G/3G avec le module Hologram
  * Environnement de developpement: GitKraken / Notepad++
  * Compilateur: javac (Java version 1.8)
  * Matériel: Raspberry Pi Zero W, Module LTE Hologram (+ carte SIM)
@@ -28,10 +29,10 @@ public class Serveur implements Runnable
     Thread m_tService;                                              //Reference vers l'objet Thread
 
     //"Pattern" en Regex qui sert à vérifier si la trame reçue correspond à ce qu'on attend
-    String pattern1 = "^(\\w{2}),(\\d+\\.?(?:\\d+)?),(\\d+\\.?(?:\\d+)?),(\\d+\\.?(?:\\d+)?),(\\d+\\.?(?:\\d+)?)$";
-    String pattern2 = "^Location: \\{\"altitude\": \"(-?(?:\\d+)\\.?(?:\\d+)?)\", \"uncertainty\": \"(-?(?:\\d+)\\.?(?:\\d+)?)\", \"longitude\": \"(-?(?:\\d+)\\.?(?:\\d+)?)\", \"latitude\": \"(-?(?:\\d+)\\.?(?:\\d+)?)\", \"time\": \"(\\d+:\\d+:\\d+\\.\\d+)\", \"date\": \"(\\d+\\/\\d+\\/\\d+)\"\\}$";
-    String pattern3 = "^(\\d+):(\\d+):(\\d+)\\.(\\d+)$";
-    String pattern4 = "^(\\d+)/(\\d+)/(\\d+)$";
+    String Pattern_TrameClient = "^(\\w{2}),(\\d+\\.?(?:\\d+)?),(\\d+\\.?(?:\\d+)?),(\\d+\\.?(?:\\d+)?),(\\d+\\.?(?:\\d+)?)$";
+    String Pattern_Location = "^Location: \\{\"altitude\": \"(-?(?:\\d+)\\.?(?:\\d+)?)\", \"uncertainty\": \"(-?(?:\\d+)\\.?(?:\\d+)?)\", \"longitude\": \"(-?(?:\\d+)\\.?(?:\\d+)?)\", \"latitude\": \"(-?(?:\\d+)\\.?(?:\\d+)?)\", \"time\": \"(\\d+:\\d+:\\d+\\.\\d+)\", \"date\": \"(\\d+\\/\\d+\\/\\d+)\"\\}$";
+    String Pattern_Heure = "^(\\d+):(\\d+):(\\d+)\\.(\\d+)$";
+    String Pattern_Date = "^(\\d+)/(\\d+)/(\\d+)$";
 
     public static final String NAME_GPIO = "gpio21";                //Nom du GPIO pour le kernel Raspbian
 
@@ -39,7 +40,7 @@ public class Serveur implements Runnable
     public LectureCavalier m_objCavalier;                           //Référence du thread qui sert si le cavalier est en mode debug
 
     int ModeDebug = 2;                                              //Mode debug = 1, Mode normal = 0, on le mets à 2 au début pour forcer la lecture du cavalier au démarrage                            
-    public boolean TimeUpdated = false;
+    public boolean TimeUpdated = false;                             //Pour savoir si le temps à été mis à jour
 
     public Serveur()
     {		
@@ -80,9 +81,9 @@ public class Serveur implements Runnable
     public void run()
     {   
 		String Informations = "";                                                           //Les données vont être reçues en string dans cette variable
-        String json = "";
-        String Temps = "";
-        String Date = "";
+        String json = "";                                                                   //La trame un coup qu'elle sera prête à être envoyée
+        String Temps = "";                                                                  //Le temps reçu de "modem location" mais dans le bon format pour la commande "timedatectl"
+        String Date = "";                                                                   //La date reçue de "modem location" mais dans le bon format pour la commande "timedatectl"
         String retour7 = "Location: Not Available";
 
         try
@@ -93,6 +94,8 @@ public class Serveur implements Runnable
 
             System.out.println(sCmd8[0] + " " + sCmd8[1] + " " + sCmd8[2]);                 //Affiche la commande a executer dans la console Java
             Process p8 = Runtime.getRuntime().exec(sCmd8);        			                //Execute la commande par le systeme Linux (le programme Java doit etre demarré par le root pour les acces aux GPIO)
+
+            p8.waitFor();                                                                   //Attend que la commande soit éxécutée soit terminée
 
             if (p8.getErrorStream().available() > 0)        					            //Verification s'il y a une erreur d'execution par l'interpreteur de commandes BASH
             {
@@ -116,11 +119,11 @@ public class Serveur implements Runnable
                 System.out.println(sCmd7[0] + " " + sCmd7[1] + " " + sCmd7[2]);             //Affiche la commande a executer dans la console Java
                 Process p7 = Runtime.getRuntime().exec(sCmd7);        			            //Execute la commande par le systeme Linux (le programme Java doit etre demarré par le root pour les acces aux GPIO)
 
-                p7.waitFor();                                                               //Attend que le "process" éxécuté soit terminé
+                p7.waitFor();                                                               //Attend que la commande soit éxécutée soit terminée
 
-                BufferedReader reader1 = new BufferedReader(new InputStreamReader(p7.getInputStream()));
+                BufferedReader reader1 = new BufferedReader(new InputStreamReader(p7.getInputStream()));        //Objet pour la lecture du retour
                 
-                retour7 = reader1.readLine();
+                retour7 = reader1.readLine();                                               //Lis ce que la commande retourne dans le terminal
                 System.out.println("Ligne trouvée: " + retour7);
             }
 
@@ -133,6 +136,8 @@ public class Serveur implements Runnable
             System.out.println(sCmd9[0] + " " + sCmd9[1] + " " + sCmd9[2]);                     //Affiche la commande a executer dans la console Java
             Process p9 = Runtime.getRuntime().exec(sCmd9);        			                    //Execute la commande par le systeme Linux (le programme Java doit etre demarré par le root pour les acces aux GPIO)
 
+            p9.waitFor();                                                                       //Attend que la commande soit éxécutée soit terminée
+
             if (p9.getErrorStream().available() > 0)        					                //Verification s'il y a une erreur d'execution par l'interpreteur de commandes BASH
             {
                 //Affiche l'erreur survenue
@@ -141,10 +146,10 @@ public class Serveur implements Runnable
                 brCommand9.close();
             }                                                                                   //<- FIN DU BLOC	
 
-            Pattern r2 = Pattern.compile(pattern2);          //Compile le "pattern" en Regex déclaré plus tôt
-            Matcher m2 = r2.matcher(retour7);                //Crée un objet de type matcher, qui va permettre de comparer la trame que l'on reçoit avec le pattern
+            Pattern r2 = Pattern.compile(Pattern_Location);          //Compile le "pattern" en Regex déclaré plus tôt (pour voir s'il y a des erreurs)
+            Matcher m2 = r2.matcher(retour7);                        //Crée un objet de type matcher, qui va permettre de comparer la trame que l'on reçoit avec le pattern défini
             
-            if (m2.find( ))                                  //Regarde si la trame reçue correspond au "pattern"       
+            if (m2.find( ))                                          //Regarde si la trame reçue correspond au "pattern"       
             {
                 //Affiche les valeurs trouvés dans les groupes du pattern regex. Chaque groupe correspond à la valeur reçue de la commande location
                 System.out.println("Altitude: "      + m2.group(1));
@@ -154,23 +159,23 @@ public class Serveur implements Runnable
                 System.out.println("Temps: "         + m2.group(5));
                 System.out.println("Date: "          + m2.group(6));
 
-                String ATemps = m2.group(5);
-                String ADate = m2.group(6);
+                String ATemps = m2.group(5);        //Mets seulement le temps dans la variable, qui n'est pas encore dans le bon format pour la commande "timedatectl"
+                String ADate = m2.group(6);         //Mets seulement la date dans la variable, qui n'est pas encore dans le bon format pour la commande "timedatectl"
 
-                Pattern r3 = Pattern.compile(pattern3);
-                Matcher m3 = r3.matcher(ATemps);
+                Pattern r3 = Pattern.compile(Pattern_Heure);        //Compile le "pattern" en Regex déclaré plus tôt (pour voir s'il y a des erreurs)
+                Matcher m3 = r3.matcher(ATemps);                    //Crée un objet de type matcher, qui va permettre de comparer l'heure acquise avec le pattern défini
 
-                if (m3.find( ))
+                if (m3.find( ))                                     //Regarde si la l'heure reçue correspond au "pattern"     
                 {
-                    Temps = m3.group(1) + ":" + m3.group(2) + ":" + m3.group(3);
+                    Temps = m3.group(1) + ":" + m3.group(2) + ":" + m3.group(3);        //Mets l'heure dans le bon format pour la commande "timedatectl"
                 }
 
-                Pattern r4 = Pattern.compile(pattern4);
-                Matcher m4 = r4.matcher(ADate);
+                Pattern r4 = Pattern.compile(Pattern_Date);         //Compile le "pattern" en Regex déclaré plus tôt (pour voir s'il y a des erreurs)
+                Matcher m4 = r4.matcher(ADate);                     //Crée un objet de type matcher, qui va permettre de comparer la date acquise avec le pattern défini
 
-                if (m4.find( ))
+                if (m4.find( ))                                     //Regarde si la la date reçue correspond au "pattern"
                 {
-                    Date = m4.group(3) + "-" + m4.group(2) + "-" + m4.group(1);
+                    Date = m4.group(3) + "-" + m4.group(2) + "-" + m4.group(1);         //Mets la date dans le bon format pour la commande "timedatectl"
                 }
 
                 //Ce bloc permet de de mettre à jour l'heure du Pi                                  //<- DÉBUT DU BLOC
@@ -180,7 +185,7 @@ public class Serveur implements Runnable
                 System.out.println(sCmd10[0] + " " + sCmd10[1] + " " + sCmd10[2]);                  //Affiche la commande a executer dans la console Java
                 Process p10 = Runtime.getRuntime().exec(sCmd10);        			                //Execute la commande par le systeme Linux (le programme Java doit etre demarré par le root pour les acces aux GPIO)
 
-                p10.waitFor();                                                                      //Attend que le "process" éxécuté soit terminé
+                p10.waitFor();                                                                      //Attend que la commande soit éxécutée soit terminée
                                     
                 if (p10.getErrorStream().available() > 0)        					                //Verification s'il y a une erreur d'execution par l'interpreteur de commandes BASH
                 {
@@ -211,10 +216,10 @@ public class Serveur implements Runnable
 
                 System.out.println(Informations + " -> à été reçu d'un client");
             
-                Pattern r1 = Pattern.compile(pattern1);          //Compile le "pattern" en Regex déclaré plus tôt
-                Matcher m1 = r1.matcher(Informations);            //Crée un objet de type matcher, qui va permettre de comparer la trame que l'on reçoit avec le pattern
+                Pattern r1 = Pattern.compile(Pattern_TrameClient);              //Compile le "pattern" en Regex déclaré plus tôt
+                Matcher m1 = r1.matcher(Informations);                          //Crée un objet de type matcher, qui va permettre de comparer la trame que l'on reçoit avec le pattern
 
-                if (m1.find( ))                                  //Regarde si la trame reçue correspond au "pattern"       
+                if (m1.find( ))                                                 //Regarde si la trame reçue correspond au "pattern"       
                 {
                     //Affiche les valeurs trouvés dans les groupes du pattern regex. Chaque groupe correspond à la valeur d'un capteur (ID, T, P, H, R)
                     System.out.println("ID: "          + m1.group(1));
@@ -227,7 +232,7 @@ public class Serveur implements Runnable
                     json = "{ \\\"ID\\\":\\\"" + m1.group(1) + "\\\", \\\"T\\\":\\\"" + m1.group(2) + "\\\", \\\"P\\\":\\\"" + m1.group(3) + "\\\", \\\"H\\\":\\\"" + m1.group(4) + "\\\", \\\"R\\\":\\\"" + m1.group(5) + "\\\", \\\"D\\\":\\\"" + java.time.LocalDateTime.now() + "\\\" }";
                     System.out.println("Trame json crée: " + json);
 
-                    json = "\"" + json + "\"";
+                    json = "\"" + json + "\"";      //Pour échapper les crochets au début et à la fin de la trame
                     json += "\r";
 
                     if (ModeDebug == 0)             //Accumule les données dans un fichier .txt
@@ -246,6 +251,8 @@ public class Serveur implements Runnable
 
                         System.out.println(sCmd2[0] + " " + sCmd2[1] + " " + sCmd2[2]);             //Affiche la commande a executer dans la console Java
                         Process p2 = Runtime.getRuntime().exec(sCmd2);        			            //Execute la commande par le systeme Linux (le programme Java doit etre demarré par le root pour les acces aux GPIO)
+
+                        p2.waitFor();                                                               //Attend que la commande soit éxécutée soit terminée
 
                         if (p2.getErrorStream().available() > 0)        					        //Verification s'il y a une erreur d'execution par l'interpreteur de commandes BASH
                         {
@@ -574,7 +581,7 @@ class LectureCavalier implements Runnable
                 }
 
                 //-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-                Thread.sleep(TEMPS_5S);
+                Thread.sleep(TEMPS_5S);                                                                     //Lecture du GPIO à chaque 5 secondes
                 //-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
             }
         }
@@ -657,6 +664,8 @@ class EnvoieInformations implements Runnable
                     System.out.println(sCmd1[0] + " " + sCmd1[1] + " " + sCmd1[2]);                 //Affiche la commande a executer dans la console Java
                     Process p1 = Runtime.getRuntime().exec(sCmd1);        			                //Execute la commande par le systeme Linux (le programme Java doit etre demarré par le root pour les acces aux GPIO)
 
+                    p1.waitFor();                                                                   //Attend que la commande soit éxécutée soit terminée            
+
                     if (p1.getErrorStream().available() > 0)        					            //Verification s'il y a une erreur d'execution par l'interpreteur de commandes BASH
                     {
                         //Affiche l'erreur survenue
@@ -676,6 +685,8 @@ class EnvoieInformations implements Runnable
                     System.out.println(sCmd4[0] + " " + sCmd4[1] + " " + sCmd4[2]);                 //Affiche la commande a executer dans la console Java
                     Process p4 = Runtime.getRuntime().exec(sCmd4);        			                //Execute la commande par le systeme Linux (le programme Java doit etre demarré par le root pour les acces aux GPIO)
 
+                    p4.waitFor();                                                                   //Attend que la commande soit éxécutée soit terminée
+
                     if (p4.getErrorStream().available() > 0)        					            //Verification s'il y a une erreur d'execution par l'interpreteur de commandes BASH
                     {
                         //Affiche l'erreur survenue
@@ -686,6 +697,7 @@ class EnvoieInformations implements Runnable
 
                     //-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
                     Thread.sleep(TEMPS_1M);               //Délai de 60 secondes pour laisser le temps au modem de se connecter au réseau
+                    //REMPLACER LE DÉLAI PAR VOIR SI SA AFFICHE "PPP SESSION STARTED" DANS LE TERMINAL
                     //-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
                     //Ce bloc éxécute la commande qui envoie les informations à Hologram            //<- DÉBUT DU BLOC
@@ -703,6 +715,8 @@ class EnvoieInformations implements Runnable
                         System.out.println(sCmd2[0] + " " + sCmd2[1] + " " + sCmd2[2]);             //Affiche la commande a executer dans la console Java
                         Process p2 = Runtime.getRuntime().exec(sCmd2);        			            //Execute la commande par le systeme Linux (le programme Java doit etre demarré par le root pour les acces aux GPIO)
 
+                        p2.waitFor();                                                               //Attend que la commande soit éxécutée soit terminée
+
                         if (p2.getErrorStream().available() > 0)        					        //Verification s'il y a une erreur d'execution par l'interpreteur de commandes BASH
                         {
                             //Affiche l'erreur survenue
@@ -715,13 +729,10 @@ class EnvoieInformations implements Runnable
                         System.out.println("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
 
                         Thread.sleep(TEMPS_1M);                                                     //1 minute entre chaque donnée
+                        //REMPLACER LE DÉLAI PAR VOIR SI SA AFFICHE "MESSAGE SENT SUCCESSFULLY" DANS LE TERMINAL
                     }
 
                     br.close();                                                                     //<- FIN DU BLOC	
-
-                    //-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-								
-                    Thread.sleep(TEMPS_30S);               //Délai de 30 secondes pour laisser le temps d'envoyer la dernière donnée
-                    //-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
                     //Ce bloc permet de de désactiver l'alimentation sur les ports USB                  //<- DÉBUT DU BLOC
                     String s6 = "echo '1-1' |sudo tee /sys/bus/usb/drivers/usb/unbind";    			    //Commande bash a etre executee
@@ -729,6 +740,8 @@ class EnvoieInformations implements Runnable
 
                     System.out.println(sCmd6[0] + " " + sCmd6[1] + " " + sCmd6[2]);                     //Affiche la commande a executer dans la console Java
                     Process p6 = Runtime.getRuntime().exec(sCmd6);        			                    //Execute la commande par le systeme Linux (le programme Java doit etre demarré par le root pour les acces aux GPIO)
+
+                    p6.waitFor();                                                                       //Attend que la commande soit éxécutée soit terminée
 
                     if (p6.getErrorStream().available() > 0)        					                //Verification s'il y a une erreur d'execution par l'interpreteur de commandes BASH
                     {
@@ -738,16 +751,14 @@ class EnvoieInformations implements Runnable
                         brCommand6.close();
                     }                                                                                   //<- FIN DU BLOC		                     
 
-                    //-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-								
-                    Thread.sleep(TEMPS_5S);               //Délai de 5 secondes avant de supprimer les données
-                    //-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-
                     //Ce bloc permet de supprimer les données après qu'elles ont été envoyées           //<- DÉBUT DU BLOC
                     String s5 = "sudo rm /home/pi/ProjetNepal/Data.txt";    			                //Commande bash a etre executee
                     String[] sCmd5 = {"/bin/bash", "-c", s5};             			                    //Specifie que l'interpreteur de commandes est BASH. Le "-c" indique que la commande a executer suit
 
                     System.out.println(sCmd5[0] + " " + sCmd5[1] + " " + sCmd5[2]);                     //Affiche la commande a executer dans la console Java
                     Process p5 = Runtime.getRuntime().exec(sCmd5);        			                    //Execute la commande par le systeme Linux (le programme Java doit etre demarré par le root pour les acces aux GPIO)
+
+                    p5.waitFor();                                                                       //Attend que la commande soit éxécutée soit terminée
 
                     if (p5.getErrorStream().available() > 0)        					                //Verification s'il y a une erreur d'execution par l'interpreteur de commandes BASH
                     {
@@ -757,16 +768,14 @@ class EnvoieInformations implements Runnable
                         brCommand5.close();
                     }                                                                                   //<- FIN DU BLOC
 
-                    //-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-								
-                    Thread.sleep(TEMPS_5S);               //Délai de 5 secondes avant de supprimer les données
-                    //-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-
                     //Ce bloc permet de supprimer les données après qu'elles ont été envoyées           //<- DÉBUT DU BLOC
                     String s3 = "sudo touch /home/pi/ProjetNepal/Data.txt";    			                //Commande bash a etre executee
                     String[] sCmd3 = {"/bin/bash", "-c", s3};             			                    //Specifie que l'interpreteur de commandes est BASH. Le "-c" indique que la commande a executer suit
 
                     System.out.println(sCmd3[0] + " " + sCmd3[1] + " " + sCmd3[2]);                     //Affiche la commande a executer dans la console Java
                     Process p3 = Runtime.getRuntime().exec(sCmd3);        			                    //Execute la commande par le systeme Linux (le programme Java doit etre demarré par le root pour les acces aux GPIO)
+
+                    p3.waitFor();                                                                       //Attend que la commande soit éxécutée soit terminée
 
                     if (p3.getErrorStream().available() > 0)        					                //Verification s'il y a une erreur d'execution par l'interpreteur de commandes BASH
                     {

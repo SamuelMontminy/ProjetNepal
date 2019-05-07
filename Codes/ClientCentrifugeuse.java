@@ -383,31 +383,22 @@ class CalculeRPM implements Runnable				//Runnable puisque la classe contient un
 				while (m_Parent.gpioReadBit(m_Parent.NAME_GPIO) == 1)
 				{
 				}	//Détecte un front montant
-				Thread.sleep(100);							//Anti rebond
 				
 				start = Instant.now();
 				
 				while (m_Parent.gpioReadBit(m_Parent.NAME_GPIO) == 0)
 				{
 				}	//Front descendant
-				Thread.sleep(100);							//Anti rebond
 				
 				while (m_Parent.gpioReadBit(m_Parent.NAME_GPIO) == 1)
 				{
 				}	//Front montant
-				Thread.sleep(100);							//Anti rebond
-
-				while (m_Parent.gpioReadBit(m_Parent.NAME_GPIO) == 0)
-				{
-				}	//Front descendant
 				
 				end = Instant.now();
 				
-				Thread.sleep(100);							//Anti rebond 
-				
 				duree = Duration.between(start, end);		//La durée entre deux fronts montants (en millisecondes) est la durée entre start et end
 				MilliSecondes = duree.toMillis();
-				RPM = 60000 / (MilliSecondes - 200);		//Convertit le temps en millisecondes en RPM
+				RPM = 60000 / MilliSecondes;				//Convertit le temps en millisecondes en RPM
 
 				if (RPM > 0 && RPM < 250)
 				{
@@ -548,7 +539,7 @@ class Shutdown implements Runnable					//Runnable puisque la classe contient un 
 					Thread.sleep(10000);
 
 					m_Countdown--;															//Pour pas que la commande soit éxécutée plusieurs fois (mets la variable à -1 donc on entre plus dans le if)
-					String sCommande = "shutdown now";  									//Commande bash à être exécutée
+					String sCommande = "sudo shutdown now";  									//Commande bash à être exécutée
 					String[] sCmd = {"/bin/bash", "-c", sCommande};                       	//Spécifie que l'interpreteur de commandes est BASH. Le "-c" indique que la commande à exécuter suit
 																							
 					System.out.println(sCmd[0] + " " + sCmd[1] + " " + sCmd[2]);            //Affiche la commande à exécuter dans la console Java
