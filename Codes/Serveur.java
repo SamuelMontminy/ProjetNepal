@@ -21,7 +21,7 @@ import java.nio.file.*;         //Pour enregistrer les trames dans un fichier
 
 public class Serveur implements Runnable
 {
-    private static final long TEMPS_30S = 30000;
+    private static final long TEMPS_2M = 120000;
 
     final static int NB_OCTETS = 1000;                              //Constante pour le nombre d'octets du tampon memoire du miniserveur
     int m_nPort = 2228;                                             //Numéro du port utilise par le miniserveur (doit être entré comme argument lorsque les codes clients sont lancés)
@@ -110,7 +110,7 @@ public class Serveur implements Runnable
             while (retour7.contains("altitude") == false)                                   //Regarde si la commande à réussie (ne contient pas "altitude si elle échoue")
             {
                 //-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-                Thread.sleep(TEMPS_30S);                                                    //Réessaie la commande chaque 30 secondes
+                Thread.sleep(TEMPS_2M);                                                    //Réessaie la commande chaque 30 secondes
                 //-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
                 String s7 = "sudo hologram modem location";    			                    //Commande bash a etre executee
@@ -119,7 +119,7 @@ public class Serveur implements Runnable
                 System.out.println(sCmd7[0] + " " + sCmd7[1] + " " + sCmd7[2]);             //Affiche la commande a executer dans la console Java
                 Process p7 = Runtime.getRuntime().exec(sCmd7);        			            //Execute la commande par le systeme Linux (le programme Java doit etre demarré par le root pour les acces aux GPIO)
 
-                //p7.waitFor();                                                               //Attend que la commande soit éxécutée soit terminée
+                p7.waitFor();                                                               //Attend que la commande soit éxécutée soit terminée
 
                 BufferedReader reader1 = new BufferedReader(new InputStreamReader(p7.getInputStream()));        //Objet pour la lecture du retour
                 
@@ -825,6 +825,8 @@ class EnvoieInformations implements Runnable
                     System.out.println("Envoi de données annulé puisque le mode debug est activé");
                     AfficheMessage = false;
                 }
+
+                Thread.sleep(TEMPS_5S);
             }
         }
 
