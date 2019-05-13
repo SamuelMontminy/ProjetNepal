@@ -4,9 +4,9 @@
 
 sudo pigpiod                #Pour activer pigpio
 
-raspi-gpio set 5 pd         #pull-down sur gpio5
-raspi-gpio set 6 pd         #pull-down sur gpio6
-raspi-gpio set 13 pd        #pull-down sur gpio13
+pigs pud 5 d                #pull-down sur gpio5
+pigs pud 6 d                #pull-down sur gpio6
+pigs pud 13 d               #pull-down sur gpio13
 
 cd  /home/pi/ProjetNepal/
 
