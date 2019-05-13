@@ -657,7 +657,7 @@ class EnvoieInformations implements Runnable
             }
 
             //-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-            Thread.sleep(TEMPS_1M);                                                                //<- Avant d'envoyer le premier bloc de données
+            Thread.sleep(TEMPS_5M);                                                                //<- Avant d'envoyer le premier bloc de données
             //-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
             while (true)
