@@ -12,7 +12,7 @@
  * @version 1.1 : Distinction entre les codes clients. Ce code sera seulement utilisé par l'écrémeuse (RPM & DS18B20)
  * @version 1.2 : N'envoie pas une trame json au serveur.
  * Environnement de développement: GitKraken
- * Compilateur: javac (Java version 1.8)
+ * Compilateur: Pi4J
  * Matériel: Raspberry Pi Zero W
  */
  

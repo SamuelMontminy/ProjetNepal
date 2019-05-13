@@ -429,7 +429,7 @@ class CalculeRPM implements Runnable				//Runnable puisque la classe contient un
 					m_Parent.m_NbRPM++;						//Pour diviser m_TotalRPM pour avoir la moyenne de RPM par minute
 				}
 
-				m_Parent.ResetCountdown();				//Réinitialise le compteur d'inactivité
+				m_Parent.ResetCountdown();					//Réinitialise le compteur d'inactivité
 			}
 			
 			catch (Exception e)
@@ -539,7 +539,7 @@ class Shutdown implements Runnable					//Runnable puisque la classe contient un 
 					Thread.sleep(10000);
 
 					m_Countdown--;															//Pour pas que la commande soit éxécutée plusieurs fois (mets la variable à -1 donc on entre plus dans le if)
-					String sCommande = "sudo shutdown now";  									//Commande bash à être exécutée
+					String sCommande = "sudo shutdown now";  								//Commande bash à être exécutée
 					String[] sCmd = {"/bin/bash", "-c", sCommande};                       	//Spécifie que l'interpreteur de commandes est BASH. Le "-c" indique que la commande à exécuter suit
 																							
 					System.out.println(sCmd[0] + " " + sCmd[1] + " " + sCmd[2]);            //Affiche la commande à exécuter dans la console Java

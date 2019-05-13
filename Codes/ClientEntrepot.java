@@ -9,7 +9,7 @@
  * @version 1.1 : Distinction entre les codes clients. Ce code sera seulement utilisé par l'entrepot (BME280)
  * @version 1.2 : N'envoie pas une trame json au serveur.
  * Environnement de développement: GitKraken
- * Compilateur: javac (Java version 1.8)
+ * Compilateur: Pi4J
  * Matériel: Raspberry Pi Zero W
  */
 
@@ -511,8 +511,10 @@ class LectureCapteur implements Runnable				//Runnable puisque la classe contien
 				//ID (EN) = Entrepot, R à 0 puisque nous nous en servons pas. C'est une structure de fichier json qui sera ensuite transformée en fichier csv par Hologram
 				//Cette string sera envoyée au serveur qui l'envoiera ensuite à Hologram, qui lui va l'envoyer à S3 puis à QuickSight en fichier csv
 				m_Parent.EnvoyerAuServeur(m_Parent.m_IP, m_Parent.m_Port, String.valueOf("EN," + m_Parent.Temperature + "," + m_Parent.Pression + "," + m_Parent.Humidite + ",0"));
-				//Thread.sleep(3525000);					//58.75 minutes
-				Thread.sleep(300000);					//5 minutes
+				
+				//-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+				Thread.sleep(3525000);					//58.75 minutes
+				//-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 			}
 			
 			catch(Exception e)
