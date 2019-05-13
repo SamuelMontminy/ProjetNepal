@@ -21,7 +21,7 @@ import java.nio.file.*;         //Pour enregistrer les trames dans un fichier
 
 public class Serveur implements Runnable
 {
-    private static final long TEMPS_2M = 120000;
+    private static final long TEMPS_1M = 60000;
 
     final static int NB_OCTETS = 1000;                              //Constante pour le nombre d'octets du tampon memoire du miniserveur
     int m_nPort = 2228;                                             //Numéro du port utilise par le miniserveur (doit être entré comme argument lorsque les codes clients sont lancés)
@@ -110,7 +110,7 @@ public class Serveur implements Runnable
             while (retour7.contains("altitude") == false)                                   //Regarde si la commande à réussie (ne contient pas "altitude si elle échoue")
             {
                 //-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-                Thread.sleep(TEMPS_2M);                                                    //Réessaie la commande chaque 30 secondes
+                Thread.sleep(TEMPS_1M);                                                    //Réessaie la commande chaque 30 secondes
                 //-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
                 String s7 = "sudo hologram modem location";    			                    //Commande bash a etre executee
